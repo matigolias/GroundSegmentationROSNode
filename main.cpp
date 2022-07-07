@@ -1,9 +1,9 @@
  #include "ros/ros.h"
 #include "alfa_gs.h"
 
-#define NODE_NAME "alfa_pd"
+#define NODE_NAME "alfa_gs"
 
-#define NODE_TYPE "Weather denoising"
+#define NODE_TYPE "Ground Segmentation"
 
 
 int main(int argc, char** argv)
