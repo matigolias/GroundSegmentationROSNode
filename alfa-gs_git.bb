@@ -1,12 +1,12 @@
 inherit ros_distro_melodic
 
-DESCRIPTION = "alfa_pd"
+DESCRIPTION = "alfa_gs"
 SECTION = "devel"
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://package.xml;;beginline=16;endline=16;md5=2feaf30a620f46f06a4b016624acf46f"
 
-ROS_CN = "alfa-pd"
-ROS_BPN = "alfa-pd"
+ROS_CN = "alfa-gs"
+ROS_BPN = "alfa-gs"
 
 ROS_BUILD_DEPENDS = " \
     dynamic-reconfigure \
@@ -25,6 +25,8 @@ ROS_BUILD_DEPENDS = " \
     std-msgs \
     message-generation \
     alfa-msg \
+    cv_bridge \
+    image_transport \
 "
 
 ROS_EXEC_DEPENDS = " \
@@ -42,7 +44,9 @@ ROS_EXEC_DEPENDS = " \
     roslib \
     sensor-msgs \
     std-msgs \
-    message-generation \   
+    message-generation \  
+    cv_bridge \
+    image_transport \ 
 "
 
 ROS_BUILDTOOL_DEPENDS = " \
@@ -65,6 +69,8 @@ ROS_EXPORT_DEPENDS = " \
     sensor-msgs \
     std-msgs \
     message-generation \
+    cv_bridge \
+    image_transport \
 "
 # ROS_BUILDTOOL_EXPORT_DEPENDS = ""
 # ROS_TEST_DEPENDS = ""
@@ -74,7 +80,7 @@ DEPENDS = "${ROS_BUILD_DEPENDS} ${ROS_BUILDTOOL_DEPENDS}"
 RDEPENDS_${PN} += "${ROS_EXEC_DEPENDS}"
 DEPENDS += "${ROS_EXPORT_DEPENDS}"
 # SRC_URI = "git://github.com/vmayoral/beginner_tutorials.git"
-SRC_URI = "git://github.com/DrChipMaster/alfa_pd_node.git"
+SRC_URI = "git://github.com/matigolias/GroundSegmentationROSNode.git"
 #SRC_URI = "file:://alfa_pd_node.tar.gz"
 
 SRCREV = "${AUTOREV}"
