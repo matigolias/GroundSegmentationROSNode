@@ -86,7 +86,7 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   vector<uint32_t> return_vector;
   return_vector.push_back(hw32_vptr[2]);
 
-  ROS_INFO("Result Vector %X", two_matrix[0]);
+  ROS_INFO("Result Vector %X", hw32_vptr[2]);
    
 }
 
