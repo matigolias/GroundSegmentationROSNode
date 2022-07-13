@@ -60,6 +60,34 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   cinfo_.K[4] = d_azimuth_;
   cinfo_.K[5] = d_altitude_;
 
+  unsigned int region_size = 0x10000;
+  off_t axi_pbase = 0xA0000000;
+  u_int32_t *hw32_vptr;
+  int fd;
+
+  // Map the physical address into user space getting a virtual address for it
+  if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
+  hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
+  }
+  else
+  ROS_INFO("NAO ENTROU NO NMAP :(");
+
+  hw32_vptr[0] = 0;
+
+  vector<uint32_t> two_matrix {0x05040302, 0x05040302};
+
+  sleep(1);
+
+  // Write in Hw
+  write_hardware_registers(two_matrix, hw32_vptr);
+
+
+  // Read in Hw
+  vector<uint32_t> return_vector;
+  return_vector.push_back(hw32_vptr[2]);
+
+  ROS_INFO("Result Vector %X", two_matrix[0]);
+   
 }
 
 void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud)
@@ -156,8 +184,6 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   // update header
   publish_range_img(no_ground_image, cinfo_); 
   publish_pointcloud(seg_point_cloud);
-
-
 }
 
 Mat Cloud2RangeNode::RepairGaps(const Mat no_ground_image, int step, float depth_threshold) {
