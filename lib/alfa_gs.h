@@ -41,6 +41,7 @@ public:
     Mat GetSavitskyGolayKernel(int window_size);
     Mat SavitskyGolaySmoothing(const Mat& image, int window_size);
     Mat EraseGroundBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size);
+    void CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image);
 
     pcl::PointCloud<PointT>::Ptr CameraCb(cv::Mat range_image, const sensor_msgs::CameraInfo cinfo_);
 

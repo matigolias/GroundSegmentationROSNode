@@ -6,6 +6,7 @@
 
 using namespace cloud2range;
 using PointT = pcl::PointXYZI;
+using namespace std::chrono;
 
 Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_msg::ConfigMessage>* default_configurations):AlfaNode (node_name,node_type,default_configurations)
 {
@@ -60,33 +61,32 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   cinfo_.K[4] = d_azimuth_;
   cinfo_.K[5] = d_altitude_;
 
-  unsigned int region_size = 0x10000;
-  off_t axi_pbase = 0xA0000000;
-  u_int32_t *hw32_vptr;
-  int fd;
+  // unsigned int region_size = 0x10000;
+  // off_t axi_pbase = 0xA0000000;
+  // u_int32_t *hw32_vptr;
+  // int fd;
 
-  // Map the physical address into user space getting a virtual address for it
-  if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
-  hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
-  }
-  else
-  ROS_INFO("NAO ENTROU NO NMAP :(");
+  // // Map the physical address into user space getting a virtual address for it
+  // if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
+  // hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
+  // }
+  // else
+  // ROS_INFO("NAO ENTROU NO NMAP :(");
 
-  hw32_vptr[0] = 0;
+  // hw32_vptr[0] = 0;
 
-  vector<uint32_t> two_matrix {0x05040302, 0x05040302};
+  // vector<uint32_t> two_matrix {0x05040302, 0x05040302};
 
-  sleep(1);
+  // // Write in Hw
+  // write_hardware_registers(two_matrix, hw32_vptr);
+  
+  // sleep(1);
 
-  // Write in Hw
-  write_hardware_registers(two_matrix, hw32_vptr);
+  // // Read in Hw
+  // vector<uint32_t> return_vector;
+  // return_vector.push_back(hw32_vptr[2]);
 
-
-  // Read in Hw
-  vector<uint32_t> return_vector;
-  return_vector.push_back(hw32_vptr[2]);
-
-  ROS_INFO("Result Vector %X", hw32_vptr[2]);
+  // ROS_INFO("Result Vector %X", hw32_vptr[2]);
    
 }
 
@@ -171,6 +171,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   ROS_INFO("INV_ALTITUDE -> %d", a);
   ROS_INFO("INV_RANGE -> %d", r);
 
+  auto start_gs = high_resolution_clock::now();
 
   Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
   Mat angle_image = CreateAngleImg(repaired_range_image);
@@ -178,6 +179,12 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   //Mat res_image = CreateResImage (range_image, smoothed_image);
 
   Mat no_ground_image = EraseGroundBFS (range_image, smoothed_image, ground_angle_threshold, start_angle_threshold, window_size);
+
+  auto stop_gs = high_resolution_clock::now();
+  auto duration_gs = duration_cast<milliseconds>(stop_gs - start_gs);
+
+  ROS_INFO("TOTAL DURATION -> %ld ms", duration_gs.count());
+
   pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
 
 
@@ -448,6 +455,35 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
     }
   }
     return res_image;
+  }
+
+   void Cloud2RangeNode::CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image){
+    
+    int seg_gnd_cntr=0, true_detected_gnd_cntr=0, labeled_gnd_cntr=0, percentage_of_correct_gnd=0, percentage_of_incorrect_gnd=0;
+
+    for (int col=0; col<seg_range_image.cols; ++col)
+  {
+    for (int row=0; row<seg_range_image.rows; ++row)
+    {
+      if(labeled_range_image.at<ushort>(row, col) == 0)
+      labeled_gnd_cntr++;//number of true gnd points present in the range image
+      if(seg_range_image.at<ushort>(row, col) == 0 && og_range_image.at<ushort>(row, col) != 0)
+      seg_gnd_cntr++;//number of gnd points detected in the range image
+      if(seg_range_image.at<ushort>(row, col) == labeled_range_image.at<ushort>(row, col))
+      true_detected_gnd_cntr++;//number of true gnd points detected in the range image 
+    }
+  }
+
+  percentage_of_correct_gnd =  (true_detected_gnd_cntr * 100 / labeled_gnd_cntr); //percentage of correct ground points detected
+  percentage_of_incorrect_gnd = ((seg_gnd_cntr-true_detected_gnd_cntr) * 100 / seg_gnd_cntr); //percentage of incorrect ground points detected
+
+  ROS_INFO("number of true gnd points present in the range image -> %d\n"
+            "number of gnd points detected in the range image -> %d\n"
+            "number of true gnd points detected in the range image -> %d\n"
+            "percentage of correct ground points detected -> %d\n"
+            "percentage of incorrect ground points detected -> %d\n", 
+            labeled_gnd_cntr, seg_gnd_cntr, true_detected_gnd_cntr, percentage_of_correct_gnd, percentage_of_incorrect_gnd);
+
   }
 
   pcl::PointCloud<PointT>::Ptr Cloud2RangeNode::CameraCb(cv::Mat range_image, const sensor_msgs::CameraInfo cinfo_) {

@@ -8,7 +8,6 @@ namespace cloud2range {
 using cv::Mat;
 
 
-
 class Label
 {  
 private: 
