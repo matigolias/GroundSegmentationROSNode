@@ -61,32 +61,43 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   cinfo_.K[4] = d_azimuth_;
   cinfo_.K[5] = d_altitude_;
 
-  // unsigned int region_size = 0x10000;
-  // off_t axi_pbase = 0xA0000000;
-  // u_int32_t *hw32_vptr;
-  // int fd;
+  unsigned int region_size = 0x10000;
+  off_t axi_pbase = 0xA0000000;
+  u_int32_t *hw32_vptr;
+  int fd;
 
-  // // Map the physical address into user space getting a virtual address for it
-  // if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
-  // hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
-  // }
-  // else
-  // ROS_INFO("NAO ENTROU NO NMAP :(");
+  // Map the physical address into user space getting a virtual address for it
+  if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
+  hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
+  }
+  else
+  ROS_INFO("NAO ENTROU NO NMAP :(");
 
-  // hw32_vptr[0] = 0;
+  hw32_vptr[0] = 0;
 
-  // vector<uint32_t> two_matrix {0x05040302, 0x05040302};
+  vector<uint32_t> two_matrix;
+  two_matrix.push_back(0x01020301);
+  two_matrix.push_back(0x02030102);
+  two_matrix.push_back(0x03010203);
+  two_matrix.push_back(0x01020301);
+  two_matrix.push_back(0x02030000);
+  // Write in Hw
+  write_hardware_registers(two_matrix, hw32_vptr);
 
-  // // Write in Hw
-  // write_hardware_registers(two_matrix, hw32_vptr);
-  
-  // sleep(1);
+  sleep(1);
 
-  // // Read in Hw
-  // vector<uint32_t> return_vector;
-  // return_vector.push_back(hw32_vptr[2]);
+  // Read in Hw
+  vector<uint32_t> return_vector;
 
-  // ROS_INFO("Result Vector %X", hw32_vptr[2]);
+  ROS_INFO("Result Matrix %d ", hw32_vptr[5]);
+  ROS_INFO("Result Matrix %d ", hw32_vptr[6]);
+  ROS_INFO("Result Matrix %d - ", hw32_vptr[7]);
+  ROS_INFO("Result Matrix %d ", hw32_vptr[8]);
+  ROS_INFO("Result Matrix %d ", hw32_vptr[9]);
+  ROS_INFO("Result Matrix %d - ", hw32_vptr[10]);
+  ROS_INFO("Result Matrix %d ", hw32_vptr[11]);
+  ROS_INFO("Result Matrix %d ", hw32_vptr[12]);
+  ROS_INFO("Result Matrix %d", hw32_vptr[13]);
    
 }
 
