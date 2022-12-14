@@ -28,10 +28,12 @@ using cv::Mat;
 const cv::Point ANCHOR_CENTER = cv::Point(-1, -1);
 const int SAME_OUTPUT_TYPE = -1;
 
+typedef long long int u64;
+
 class Cloud2RangeNode :  public  AlfaNode //mudar para Alfa_GS
 {
 public:
-    Cloud2RangeNode(string node_name,string node_type,vector<alfa_msg::ConfigMessage>* default_configurations);
+    Cloud2RangeNode(string node_name, string node_type, vector<alfa_msg::ConfigMessage>* default_configurations);
 
     Mat RepairGaps(const Mat no_ground_image, int step, float depth_threshold);
     Mat CreateAngleImg(Mat range_image);
@@ -42,6 +44,8 @@ public:
     Mat SavitskyGolaySmoothing(const Mat& image, int window_size);
     Mat EraseGroundBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size);
     void CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image);
+
+    void write_hardware_configurations();
 
     pcl::PointCloud<PointT>::Ptr CameraCb(cv::Mat range_image, const sensor_msgs::CameraInfo cinfo_);
 
@@ -57,8 +61,14 @@ private:
   double start_angle_threshold, ground_angle_threshold;
   int n_cols_, window_size;
 
+  int sensor_tag;
+  bool hw;
+
   // We are going to use camera info to store all the above params for decoding
   sensor_msgs::CameraInfo cinfo_;
+
+  u64 *ddr_pointer;
+  u_int32_t *hw32_vptr;
 
   void process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr  input_cloud);
   alfa_msg::AlfaConfigure::Response   process_config(alfa_msg::AlfaConfigure::Request &req);

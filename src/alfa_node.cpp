@@ -4,8 +4,8 @@
 #include <chrono>
 
 
-#define RES_MULTIPLIER 10
-#define INTENSITY_MULTIPLIER 1000
+#define RES_MULTIPLIER 100
+#define RANGE_MULTIPLIER 100
 //#define DEBUG
 
 AlfaNode::AlfaNode(string node_name,string node_type,vector<alfa_msg::ConfigMessage>* default_configurations ) //: it_(nh) 
@@ -74,15 +74,43 @@ alfa_msg::AlfaConfigure::Response AlfaNode::process_config(alfa_msg::AlfaConfigu
 
 
 
+// void AlfaNode::store_pointcloud_hardware(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud, u64 *pointer)
+// {
+//     int pointcloud_index = 0;
+//     int16_t a16_points[4];
+//     for (auto point :*input_cloud) {
+//         a16_points[0] = point.x*RES_MULTIPLIER;
+//         a16_points[1] = point.y*RES_MULTIPLIER;
+//         a16_points[2] = point.z*RES_MULTIPLIER;
+//         a16_points[3] = point.intensity*INTENSITY_MULTIPLIER;
+//         memcpy((void*)(pointer+pointcloud_index),a16_points,sizeof(int16_t)*4);
+//         pointcloud_index++;
+//     }
+// }
+
 void AlfaNode::store_pointcloud_hardware(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud, u64 *pointer)
 {
     int pointcloud_index = 0;
-    int16_t a16_points[4];
-    for (auto point :*input_cloud) {
-        a16_points[0] = point.x*RES_MULTIPLIER;
-        a16_points[1] = point.y*RES_MULTIPLIER;
-        a16_points[2] = point.z*RES_MULTIPLIER;
-        a16_points[3] = point.intensity*INTENSITY_MULTIPLIER;
+    uint16_t a16_points[4];
+    int16_t elevation;
+    a16_points[3] = 0;
+    for (auto point :*input_cloud){
+        //elevation
+        elevation = (float) ((std::atan2(point.z, std::hypot(point.x, point.y)))* (180.0f/M_PI)) *RES_MULTIPLIER;
+        a16_points[0] = elevation;
+        //azimuth
+        const auto a = std::atan2(point.y, point.x);
+        a16_points[1] = (float) ((point.y >= 0 ? a : a + M_PI * 2) * (180.0f/M_PI)) * RES_MULTIPLIER;
+        //range
+        a16_points[2] = std::sqrt(point.x * point.x + point.y * point.y + point.z * point.z) * RANGE_MULTIPLIER;
+
+        #ifdef DEBUG
+        if(pointcloud_index < 16 || (pointcloud_index>=32 && pointcloud_index <=47) || (input_cloud->size()-pointcloud_index<10))
+        {   
+            std::cout << pointcloud_index << " RANGE: " << range << " | a16_PTS: " << a16_points[0] << "  " << a16_points[1] << "  " << a16_points[2] << " " << a16_points[3] << endl;
+        }
+        #endif
+
         memcpy((void*)(pointer+pointcloud_index),a16_points,sizeof(int16_t)*4);
         pointcloud_index++;
     }
@@ -100,7 +128,7 @@ pcl::PointCloud<pcl::PointXYZI>::Ptr AlfaNode::read_hardware_pointcloud(u64 *poi
         p.x = (a16_points[0])/float(RES_MULTIPLIER);
         p.y = (a16_points[1])/float(RES_MULTIPLIER);
         p.z = (a16_points[2])/float(RES_MULTIPLIER);
-        p.intensity = (a16_points[3])/float(INTENSITY_MULTIPLIER);
+        //p.intensity = (a16_points[3])/float(INTENSITY_MULTIPLIER);
         return_cloud->push_back(p);
         #ifdef DEBUG
 
@@ -128,8 +156,6 @@ void AlfaNode::write_hardware_registers(vector<uint32_t> data, uint32_t *pointer
         pointer[i] = data[i];
     }
 }
-
-
 
 AlfaNode::~AlfaNode()
 {

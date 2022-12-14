@@ -61,55 +61,68 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   cinfo_.K[4] = d_azimuth_;
   cinfo_.K[5] = d_altitude_;
 
+  sensor_tag = 64;
+
   unsigned int region_size = 0x10000;
   off_t axi_pbase = 0xA0000000;
-  u_int32_t *hw32_vptr;
   int fd;
 
-  // Map the physical address into user space getting a virtual address for it
+  unsigned int ddr_size = 0x200000;
+  off_t ddr_ptr_base = 0x0F000000; // physical base address
+  //Map the physical address into user space getting a virtual address for it
+  hw = 0;
+
   if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
-  hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
+    ddr_pointer = (u64 *)mmap(NULL, ddr_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ptr_base);
+    hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
+    hw=1;
   }
   else
   ROS_INFO("NAO ENTROU NO NMAP :(");
+  
+  if(hw)
+    {
+      write_hardware_configurations();
+    }
 
-  hw32_vptr[0] = 0;
-
-  vector<uint32_t> two_matrix;
-  two_matrix.push_back(0x01020301);
-  two_matrix.push_back(0x02030102);
-  two_matrix.push_back(0x03010203);
-  two_matrix.push_back(0x01020301);
-  two_matrix.push_back(0x02030000);
-  // Write in Hw
-  write_hardware_registers(two_matrix, hw32_vptr);
-
-  sleep(1);
-
-  // Read in Hw
-  vector<uint32_t> return_vector;
-
-  ROS_INFO("Result Matrix %d ", hw32_vptr[5]);
-  ROS_INFO("Result Matrix %d ", hw32_vptr[6]);
-  ROS_INFO("Result Matrix %d - ", hw32_vptr[7]);
-  ROS_INFO("Result Matrix %d ", hw32_vptr[8]);
-  ROS_INFO("Result Matrix %d ", hw32_vptr[9]);
-  ROS_INFO("Result Matrix %d - ", hw32_vptr[10]);
-  ROS_INFO("Result Matrix %d ", hw32_vptr[11]);
-  ROS_INFO("Result Matrix %d ", hw32_vptr[12]);
-  ROS_INFO("Result Matrix %d", hw32_vptr[13]);
-   
 }
 
 void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud)
 {
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  if(hw)
+  {
+    //store point cloud
+    auto start_store_hw = std::chrono::high_resolution_clock::now();
+    store_pointcloud_hardware(input_cloud, ddr_pointer);
+    auto stop_store_hw = std::chrono::high_resolution_clock::now();
+    usleep(10);       //VERIFICAR!!!
+
+    //create range image
+    auto start_RI_hw = std::chrono::high_resolution_clock::now();
+    vector<uint32_t> configs;
+    configs.push_back(1);
+    configs.push_back(input_cloud->size());
+    write_hardware_registers(configs, hw32_vptr);
+    int hardware_finish = 0;
+    int value = 0;
+    while(!hardware_finish){
+      vector<uint32_t> hardware_result = read_hardware_registers(hw32_vptr, 3);
+      value = hardware_result[2];
+      if(value==1)
+        hardware_finish = 1;
+      else
+        usleep(1);
+    }
+    auto stop_RI_hw = std::chrono::high_resolution_clock::now();
+  }
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //Convert the PC to the PointXYZIR point type so we can access the ring
   // pcl::PointCloud<velodyne_pointcloud::PointXYZIR>::Ptr cloud_XYZIR (new pcl::PointCloud<velodyne_pointcloud::PointXYZIR>);
   // pcl::PCLPointCloud2 pcl_pc2; 
   // pcl_conversions::toPCL(*cloud_msg, pcl_pc2);
   // fromPCLPointCloud2(pcl_pc2, *cloud_XYZIR);
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
 
@@ -564,6 +577,44 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
   ptr_cloud = cloud.makeShared();
 
   return ptr_cloud;
+}
+
+void Cloud2RangeNode::write_hardware_configurations()
+{
+    vector<uint32_t> configs;
+    configs.push_back(0);
+    configs.push_back(0);
+    configs.push_back(0);
+    switch(sensor_tag)
+    {
+      case 16:
+        configs.push_back(0);                                         //d_azimuth 0.2 = azimuth LUT[0]
+        configs.push_back(0);                                         //d_elevation 2 = elevation LUT[0]
+        configs.push_back(0);                                         //n_lines 16 = n_lines LUT[0]
+        configs.push_back(0);                                         //min_vert_angle -15 = min_vert_angle LUT[0]
+        configs.push_back(0);                                         //n_columns 1800 = cols LUT[0]
+        break;
+
+      case 32:
+        configs.push_back(0);                                         //d_azimuth 0.2 = azimuth LUT[0]
+        configs.push_back(2);                                         //d_elevation 1.33 = elevation LUT[2]
+        configs.push_back(1);                                         //n_lines 32 = n_lines LUT[1]
+        configs.push_back(1);                                         //min_vert_angle -30 = min_vert_angle LUT[1]
+        configs.push_back(0);                                         //n_columns 1800 = cols LUT[0]
+        break;
+
+      case 64:
+        configs.push_back(0);                                         //d_azimuth 0.2 = azimuth LUT[0]
+        configs.push_back(4);                                         //d_elevation 0.47 = elevation LUT[4]
+        configs.push_back(2);                                         //n_lines 64 = n_lines LUT[2]
+        configs.push_back(2);                                         //min_vert_angle -24.8 = min_vert_angle LUT[2]
+        configs.push_back(0);                                         //n_columns 1800 = cols LUT[0]
+        break;
+
+      default:
+        cout << "Invalid Sensor!" << endl;
+    }
+    write_hardware_registers(configs, hw32_vptr, 3);
 }
 
 alfa_msg::AlfaConfigure::Response Cloud2RangeNode::process_config(alfa_msg::AlfaConfigure::Request &req)

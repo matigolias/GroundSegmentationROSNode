@@ -24,7 +24,7 @@
 #include <sensor_msgs/CameraInfo.h>
 #include <sensor_msgs/Image.h>
 #include "Labeler/label.h"
-#define TIMER_SLEEP 50000 // Time between alive messages
+#define TIMER_SLEEP 5000 // Time between alive messages
 
 #define CLOUD_TOPIC "alfa_pointcloud"  //Name of the subsriver topic where this node gets point clouds
 
@@ -117,7 +117,7 @@ public:
      * @param pointer The pointer to the register that will be stored
      * @param offset Offset from the pointer to skip some registers
      */
-    virtual void  write_hardware_registers(vector<uint32_t>  data, uint32_t* pointer, uint offset = 0);
+    virtual void  write_hardware_registers(vector<uint32_t> data, uint32_t* pointer, uint offset = 0);
 
     
 
