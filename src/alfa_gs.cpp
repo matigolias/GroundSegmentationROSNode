@@ -12,9 +12,9 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
 {
       // Read params
 
-  window_size =  7; // 5, 7, 9, 11
+  window_size =  5; // 5, 7, 9, 11
   ROS_ASSERT(window_size == 5 || 7 || 9 || 11);
-  ground_angle_threshold = 0.09;//0.087266); //5º
+  ground_angle_threshold = 0.5223;//0.087266); //5º
   ROS_ASSERT(ground_angle_threshold > 0);
   start_angle_threshold = 0.523598; //30º
   ROS_ASSERT(ground_angle_threshold > 0);
@@ -26,11 +26,11 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   sample_freq_ = 20000; //512  1024  2048
   ROS_ASSERT(sample_freq_ > 0);
 
-  min_angle_ = -0.392699;//-0.7853981634);//
-  max_angle_ = 0.392699;//0.7853981634);//
+  min_angle_ = -0.453785;//-0.7853981634);//
+  max_angle_ = 0.104719;//0.7853981634);//
   ROS_ASSERT(min_angle_ < max_angle_);
 
-  min_range_ = 0.3;
+  min_range_ = 0.5;
   max_range_ = 120;
   ROS_ASSERT(min_range_ < max_range_ && min_range_ >= 0.0);
 
