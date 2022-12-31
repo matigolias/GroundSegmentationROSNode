@@ -114,6 +114,13 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
         usleep(1);
     }
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
+
+    Mat hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);
+
+    pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(hw_range_image, cinfo_);
+      // update header
+    publish_range_img(hw_range_image, cinfo_); 
+    publish_pointcloud(seg_point_cloud);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -210,7 +217,6 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   ROS_INFO("TOTAL DURATION -> %ld ms", duration_gs.count());
 
   pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
-
 
   // update header
   publish_range_img(no_ground_image, cinfo_); 

@@ -93,14 +93,25 @@ public:
      */
     virtual void store_pointcloud_hardware(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud, u64 *pointer);
 
-    /**
+    // /**
+    //  * @brief read_hardware_pointcloud Reads and returns a point cloud. This point cloud is converted from 64bits points to the pcl format
+    //  *
+    //  * @param pointer The pointer to the first position of the memory region where the point cloud will be read
+    //  * @param size The number of points to be read from the memory
+    //  * @return Returns a pcl object with points in the PointXYZI format
+    //  */
+    // virtual pcl::PointCloud<pcl::PointXYZI>::Ptr  read_hardware_pointcloud(u64 *pointer, uint size);
+
+        /**
      * @brief read_hardware_pointcloud Reads and returns a point cloud. This point cloud is converted from 64bits points to the pcl format
      *
      * @param pointer The pointer to the first position of the memory region where the point cloud will be read
-     * @param size The number of points to be read from the memory
+     * @param rows The number of RI rows to be read from the memory
+     * @param cols The number of RI cols to be read from the memory
      * @return Returns a pcl object with points in the PointXYZI format
      */
-    virtual pcl::PointCloud<pcl::PointXYZI>::Ptr  read_hardware_pointcloud(u64 *pointer, uint size);
+    virtual Mat read_hardware_pointcloud(u64 *pointer, uint rows, uint cols);
+
 
     /**
      * @brief read_hardware_registers Reads a user-defined number of 32bits registers. Useful to communicate with AXI-Lite registers
