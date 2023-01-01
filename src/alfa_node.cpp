@@ -153,21 +153,21 @@ Mat AlfaNode::read_hardware_pointcloud(u64 *pointer, uint rows, uint cols)
     uint16_t col = 0;
     // unsigned char* data = new unsigned char[size];
     // unsigned char* dataPtr = data;
-    for (uint i=0; i<ddrSize*2; i++) {
+    for (uint i=0; i<ddrSize; i++) {
         uint16_t a16_points[4];
-        cout << "Teste 1" << endl;
         memcpy((void*)(a16_points), pointer+i, sizeof(uint16_t)*4);
-        cout << "Teste 2" << endl;
         for(uint j=0; j<4; j++){
             if(row>=64)
             {
                 col++;
                 row=0;
+                cout << "COL ->" << col << endl;
             }
                 hw_RI.at<ushort>(row, col) = a16_points[j]/100;
                 row++;
-        }
+        }     
     }
+    cout << "DDR Size ->" << ddrSize << endl; 
         
         #ifdef DEBUG
         // cout<< "First bits: "<< hex<< a16_points[0]<< " Secound bits: "<< hex<< a16_points[1]<<endl;
