@@ -113,16 +113,20 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
       else
         usleep(1);
     }
+
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
+    auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
+    ROS_INFO("TOTAL DURATION -> %ld ms", duration_hw_RI.count());
 
     Mat hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);
 
     pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(hw_range_image, cinfo_);
-      // update header
+    // update header
     publish_range_img(hw_range_image, cinfo_); 
     publish_pointcloud(seg_point_cloud);
   }
-
+  else
+  {
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   //Convert the PC to the PointXYZIR point type so we can access the ring
   // pcl::PointCloud<velodyne_pointcloud::PointXYZIR>::Ptr cloud_XYZIR (new pcl::PointCloud<velodyne_pointcloud::PointXYZIR>);
@@ -130,97 +134,98 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   // pcl_conversions::toPCL(*cloud_msg, pcl_pc2);
   // fromPCLPointCloud2(pcl_pc2, *cloud_XYZIR);
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
 
-  Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
+    //  int row = 0;
+    //  float prev_azimuth = 0;
+    int r=0, a=0;
 
-  //  int row = 0;
-  //  float prev_azimuth = 0;
-  int r=0, a=0;
+    for (size_t i = 0; i < input_cloud->size(); ++i) { //colocar em função
 
-  for (size_t i = 0; i < input_cloud->size(); ++i) { //colocar em função
+      //int ring=100;
 
-    //int ring=100;
+      // calculate altitude and azimuth and put into range image
+      const auto point = (*input_cloud)[i];
+      const auto range = PointRange(point);
 
-    // calculate altitude and azimuth and put into range image
-    const auto point = (*input_cloud)[i];
-    const auto range = PointRange(point);
+      //ring = cloud_XYZIR->points[i].ring;
+      //ROS_INFO("RING -> %d", ring);
 
-    //ring = cloud_XYZIR->points[i].ring;
-    //ROS_INFO("RING -> %d", ring);
+      if (range < min_range_ || range > max_range_) {
+        // skip invalid range
+        r++;     
+        continue;
+      }
+      const auto azimuth = PointAzimuth(point);
+      const auto altitude = PointAltitude(point);
+      
+      if (altitude < min_angle_ || altitude > max_angle_) {
+        // skip invalid range
+        a++;
+        continue;
+      }
 
-    if (range < min_range_ || range > max_range_) {
-      // skip invalid range
-      r++;     
-      continue;
+      //const int row = ring;
+      // int round towards zero
+      //int row = (altitude - min_angle_) / d_altitude_ + 0.5; //VLP-16 (+0.5)
+      
+      //  if(azimuth < prev_azimuth && azimuth < 1 && prev_azimuth > 6)
+      //    row++;
+
+      //int row = FindRow(row1, altitude);
+
+      int row = ((max_angle_ - altitude) / (max_angle_ - min_angle_)) * n_beams_;
+
+      const int col = static_cast<int>(azimuth / d_azimuth_); //% n_cols_;
+
+      // make sure valid
+      //ROS_INFO("AZIMUTH->%f, D_AZIMUTH->%f, N_COLS->%d, COL->%d, ALTITUDE->%f, ROW->%d", azimuth, d_azimuth_, n_cols_, col, altitude, row);
+      ROS_ASSERT(row >= 0 && row < n_beams_);
+      ROS_ASSERT(col >= 0 && col < n_cols_);
+
+      // normalize range to [0, 1]
+      const double range_norm = (range - min_range_) / (max_range_ - min_range_);
+
+      //ROS_INFO("ALTITUDE->%f, MIN_ANGLE->%f, D_ALTITUDE->%f, ROW1->%d, ROW->%d, COL->%d, RANGE_NORM->%f", altitude, min_angle_, d_altitude_, row1, row, col, range_norm* (std::numeric_limits<ushort>::max() - 1) + 1);
+
+      range_image.at<ushort>(row, col) = range_norm * (std::numeric_limits<ushort>::max() - 1) + 1; //(n_beams_-row-1)
+
+      // ROS_INFO("RANGE_NORM -> %f, ROW -> %d, COLUM -> %d", range_norm, row, col);
+      // ROS_INFO("RANGE2 -> %d", range_image.at<ushort>(row, col));
+      //prev_azimuth = azimuth;
     }
-     const auto azimuth = PointAzimuth(point);
-     const auto altitude = PointAltitude(point);
-     
-    if (altitude < min_angle_ || altitude > max_angle_) {
-      // skip invalid range
-      a++;
-      continue;
-    }
 
-     //const int row = ring;
-     // int round towards zero
-     //int row = (altitude - min_angle_) / d_altitude_ + 0.5; //VLP-16 (+0.5)
-     
-    //  if(azimuth < prev_azimuth && azimuth < 1 && prev_azimuth > 6)
-    //    row++;
 
-     //int row = FindRow(row1, altitude);
+    // ROS_INFO("altitude max -> %f", teste);
+    ROS_DEBUG("num points %zu, num pixels %d", input_cloud->size(),
+              cv::countNonZero(range_image));
+    ROS_INFO("num points %zu, num pixels %d", input_cloud->size(),
+              cv::countNonZero(range_image));
 
-    int row = ((max_angle_ - altitude) / (max_angle_ - min_angle_)) * n_beams_;
 
-    const int col = static_cast<int>(azimuth / d_azimuth_); //% n_cols_;
+    ROS_INFO("INV_ALTITUDE -> %d", a);
+    ROS_INFO("INV_RANGE -> %d", r);
 
-    // make sure valid
-    //ROS_INFO("AZIMUTH->%f, D_AZIMUTH->%f, N_COLS->%d, COL->%d, ALTITUDE->%f, ROW->%d", azimuth, d_azimuth_, n_cols_, col, altitude, row);
-    ROS_ASSERT(row >= 0 && row < n_beams_);
-    ROS_ASSERT(col >= 0 && col < n_cols_);
+    auto start_gs = high_resolution_clock::now();
 
-    // normalize range to [0, 1]
-    const double range_norm = (range - min_range_) / (max_range_ - min_range_);
+    Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
+    Mat angle_image = CreateAngleImg(repaired_range_image);
+    Mat smoothed_image = SavitskyGolaySmoothing(angle_image, window_size);
+    //Mat res_image = CreateResImage (range_image, smoothed_image);
 
-    //ROS_INFO("ALTITUDE->%f, MIN_ANGLE->%f, D_ALTITUDE->%f, ROW1->%d, ROW->%d, COL->%d, RANGE_NORM->%f", altitude, min_angle_, d_altitude_, row1, row, col, range_norm* (std::numeric_limits<ushort>::max() - 1) + 1);
+    Mat no_ground_image = EraseGroundBFS (range_image, smoothed_image, ground_angle_threshold, start_angle_threshold, window_size);
 
-    range_image.at<ushort>(row, col) = range_norm * (std::numeric_limits<ushort>::max() - 1) + 1; //(n_beams_-row-1)
+    auto stop_gs = high_resolution_clock::now();
+    auto duration_gs = duration_cast<milliseconds>(stop_gs - start_gs);
 
-    // ROS_INFO("RANGE_NORM -> %f, ROW -> %d, COLUM -> %d", range_norm, row, col);
-    // ROS_INFO("RANGE2 -> %d", range_image.at<ushort>(row, col));
-    //prev_azimuth = azimuth;
+    ROS_INFO("TOTAL DURATION -> %ld ms", duration_gs.count());
+
+    pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
+
+    // update header
+    publish_range_img(no_ground_image, cinfo_); 
+    publish_pointcloud(seg_point_cloud);
   }
-
-  // ROS_INFO("altitude max -> %f", teste);
-  ROS_DEBUG("num points %zu, num pixels %d", input_cloud->size(),
-            cv::countNonZero(range_image));
-  ROS_INFO("num points %zu, num pixels %d", input_cloud->size(),
-            cv::countNonZero(range_image));
-
-
-  ROS_INFO("INV_ALTITUDE -> %d", a);
-  ROS_INFO("INV_RANGE -> %d", r);
-
-  auto start_gs = high_resolution_clock::now();
-
-  Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
-  Mat angle_image = CreateAngleImg(repaired_range_image);
-  Mat smoothed_image = SavitskyGolaySmoothing(angle_image, window_size);
-  //Mat res_image = CreateResImage (range_image, smoothed_image);
-
-  Mat no_ground_image = EraseGroundBFS (range_image, smoothed_image, ground_angle_threshold, start_angle_threshold, window_size);
-
-  auto stop_gs = high_resolution_clock::now();
-  auto duration_gs = duration_cast<milliseconds>(stop_gs - start_gs);
-
-  ROS_INFO("TOTAL DURATION -> %ld ms", duration_gs.count());
-
-  pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
-
-  // update header
-  publish_range_img(no_ground_image, cinfo_); 
-  publish_pointcloud(seg_point_cloud);
 }
 
 Mat Cloud2RangeNode::RepairGaps(const Mat no_ground_image, int step, float depth_threshold) {
