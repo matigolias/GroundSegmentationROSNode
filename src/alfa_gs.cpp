@@ -67,7 +67,7 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   off_t axi_pbase = 0xA0000000;
   int fd;
 
-  unsigned int ddr_size = 0x200000;
+  unsigned int ddr_size = 0x400000;
   off_t ddr_ptr_base = 0x0F000000; // physical base address
   //Map the physical address into user space getting a virtual address for it
   hw = 0;
