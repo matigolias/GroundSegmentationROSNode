@@ -23,7 +23,7 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   ROS_ASSERT(n_beams_ > 0);
   rpm_ = 600;
   ROS_ASSERT(rpm_ > 0);
-  sample_freq_ = 20000; //512  1024  2048
+  sample_freq_ = 18000; //512  1024  2048
   ROS_ASSERT(sample_freq_ > 0);
 
   min_angle_ = -0.453785;//-0.7853981634);//

@@ -148,7 +148,7 @@ Mat AlfaNode::read_hardware_pointcloud(u64 *pointer, uint rows, uint cols)
     Mat hw_RI = Mat::zeros(64, 1800, CV_16UC1);
 
     uint size = rows * cols;
-    uint ddrSize = size/8; // since each position has 16 bits, 16*4=64 bit blocks
+    uint ddrSize = size/4; // since each position has 16 bits, 16*4=64 bit blocks
     uint8_t row = 0;
     uint16_t col = 0;
     // unsigned char* data = new unsigned char[size];
