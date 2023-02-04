@@ -103,26 +103,43 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     configs.push_back(1);
     configs.push_back(input_cloud->size());
     write_hardware_registers(configs, hw32_vptr);
-    int hardware_finish = 0;
-    int value = 0;
-    while(!hardware_finish){
-      vector<uint32_t> hardware_result = read_hardware_registers(hw32_vptr, 3);
-      value = hardware_result[2];
-      if(value==1)
-        hardware_finish = 1;
+    int hw_ri_finish = 0;
+    int hw_ai_finish = 0;
+    //int value = 0;
+    while(!hw_ri_finish){
+      vector<uint32_t> hardware_result = read_hardware_registers(hw32_vptr, 4);
+      //value = hardware_result[2];
+      //if(value==1)
+      if(hardware_result[2]==1)
+        hw_ri_finish = 1;
       else
         usleep(1);
     }
 
-    Mat hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);
+    Mat hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
+
+    while(!hw_ai_finish){
+      vector<uint32_t> hardware_result = read_hardware_registers(hw32_vptr, 4);
+      //value = hardware_result[2];
+      //if(value==1)
+      if(hardware_result[3]==1)
+        hw_ai_finish = 1;
+      else
+        usleep(1);
+    }
+
+    Mat hw_angle_image = read_hardware_filtered_angle_image(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
 
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
     ROS_INFO("TOTAL DURATION -> %ld ms", duration_hw_RI.count());
 
+
+
     pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(hw_range_image, cinfo_);
     // update header
     publish_range_img(hw_range_image, cinfo_); 
+    publish_range_img(hw_angle_image, cinfo_);
     publish_pointcloud(seg_point_cloud);
   }
   else
@@ -174,7 +191,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
 
       //int row = FindRow(row1, altitude);
 
-      int row = ((max_angle_ - altitude) / (max_angle_ - min_angle_)) * n_beams_;
+      int row = ((max_angle_ - altitude) / (max_angle_ - min_angle_)) * n_beams_; //atualizar com o do cloud2range
 
       const int col = static_cast<int>(azimuth / d_azimuth_); //% n_cols_;
 

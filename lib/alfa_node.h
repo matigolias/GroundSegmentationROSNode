@@ -102,8 +102,8 @@ public:
     //  */
     // virtual pcl::PointCloud<pcl::PointXYZI>::Ptr  read_hardware_pointcloud(u64 *pointer, uint size);
 
-        /**
-     * @brief read_hardware_pointcloud Reads and returns a point cloud. This point cloud is converted from 64bits points to the pcl format
+    /**
+     * @brief read_hardware_pointcloud Reads and returns a range image.
      *
      * @param pointer The pointer to the first position of the memory region where the point cloud will be read
      * @param rows The number of RI rows to be read from the memory
@@ -111,6 +111,16 @@ public:
      * @return Returns a pcl object with points in the PointXYZI format
      */
     virtual Mat read_hardware_pointcloud(u64 *pointer, uint rows, uint cols);
+
+    /**
+     * @brief read_hardware_filtered_angle_image  Reads and returns a angle image.
+     *
+     * @param pointer The pointer to the first position of the memory region where the point cloud will be read
+     * @param rows The number of AI rows to be read from the memory
+     * @param cols The number of AI cols to be read from the memory
+     * @return Returns a pcl object with points in the PointXYZI format
+     */ 
+    virtual Mat read_hardware_filtered_angle_image(u64 *pointer, uint rows, uint cols);
 
 
     /**

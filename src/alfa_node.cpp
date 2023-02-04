@@ -170,13 +170,73 @@ Mat AlfaNode::read_hardware_pointcloud(u64 *pointer, uint rows, uint cols)
     cout << "DDR Size ->" << ddrSize << endl; 
         
         #ifdef DEBUG
-        // cout<< "First bits: "<< hex<< a16_points[0]<< " Secound bits: "<< hex<< a16_points[1]<<endl;
+        // cout<< "First bits: "<< hex<< a16_points[0]<< " Second bits: "<< hex<< a16_points[1]<<endl;
         // cout << "Obtained coordinate: X:"<< hex<< p.x<< "; Y: "<<hex <<p.y<< "; Z: "<<hex<<p.z<< "; Intensity: "<<p.intensity<<endl;
         #endif
 
     return hw_RI;
 }
     
+Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uint cols)
+{
+    Mat hw_AI = Mat::zeros(rows-1, cols, CV_16UC1);
+
+    uint size = (rows-1) * cols;
+    uint ddrSize = size/4; // since each position has 16 bits, 16*4=64 bit blocks
+    uint8_t row = 0;
+    uint16_t col = 0;
+    uint16_t mask = 1023;
+    uint32_t point_cntr = 0;
+    uint8_t burst_cntr = 0;
+
+    while (point_cntr < size)
+    {  
+        //uint16_t a16_points[4];
+        //memcpy((void*)(a16_points), pointer+i, sizeof(uint16_t)*4);
+        if(burst_cntr == 42)
+        {
+            for(int k=0; k<4; k++){
+            if(row>=62)
+            {
+                col++;
+                row=0;
+                cout << "COL ->" << col << endl;
+            }
+                hw_AI.at<ushort>(row, col) = (*six_points >> (10*k)) & mask;
+
+                cout << "original" << *six_points << endl;
+                cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
+
+                row++;
+                point_cntr++;
+            }
+            burst_cntr = 0;
+        }
+        else
+        {
+            for(uint j=0; j<6; j++){
+            if(row>=62)
+            {
+                col++;
+                row=0;
+                cout << "COL ->" << col << endl;
+            }
+                hw_AI.at<ushort>(row, col) = (*six_points >> (10*j)) & mask;
+                row++;
+                point_cntr++;
+            } 
+            burst_cntr ++;  
+        }  
+    }
+    cout << "Angle Image" << endl; 
+        
+        #ifdef DEBUG
+        // cout<< "First bits: "<< hex<< a16_points[0]<< " Second bits: "<< hex<< a16_points[1]<<endl;
+        // cout << "Obtained coordinate: X:"<< hex<< p.x<< "; Y: "<<hex <<p.y<< "; Z: "<<hex<<p.z<< "; Intensity: "<<p.intensity<<endl;
+        #endif
+
+    return hw_AI;
+}
 
 
 vector<uint32_t> AlfaNode::read_hardware_registers(uint32_t *pointer, uint size)
