@@ -68,7 +68,7 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
   int fd;
 
   //unsigned int ddr_size = 0x200000;
-  unsigned int ddr_size_1 = 0x90000;
+  unsigned int ddr_size_1 = 0x200000;
   unsigned int ddr_size_2 = 0x90000;
   off_t ddr_ptr_base = 0x0F000000; // physical base address
   off_t ddr_ai_ptr_base = 0x0F100000;
