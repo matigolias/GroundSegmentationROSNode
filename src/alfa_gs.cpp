@@ -69,11 +69,13 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
 
   unsigned int ddr_size = 0x200000;
   off_t ddr_ptr_base = 0x0F000000; // physical base address
+  off_t ddr_ai_ptr_base = 0x0F3D0900;
   //Map the physical address into user space getting a virtual address for it
   hw = 0;
 
   if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
     ddr_pointer = (u64 *)mmap(NULL, ddr_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ptr_base);
+    ddr_pointer_2 = (u64 *)mmap(NULL, ddr_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ai_ptr_base);
     hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
     hw=1;
   }
@@ -131,7 +133,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
         usleep(1);
     }
 
-    Mat hw_angle_image = read_hardware_filtered_angle_image(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
+    Mat hw_angle_image = read_hardware_filtered_angle_image(ddr_pointer_2, n_beams_, n_cols_);//mudar para read hw_AI
 
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
@@ -141,7 +143,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
 
     pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(hw_range_image, cinfo_);
     // update header
-    publish_range_img(hw_range_image, cinfo_); 
+    //publish_range_img(hw_range_image, cinfo_); 
     publish_range_img(hw_angle_image, cinfo_);
     publish_pointcloud(seg_point_cloud);
   }

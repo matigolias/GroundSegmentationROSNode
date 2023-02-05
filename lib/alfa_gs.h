@@ -68,6 +68,7 @@ private:
   sensor_msgs::CameraInfo cinfo_;
 
   u64 *ddr_pointer;
+  u64 *ddr_pointer_2;
   u_int32_t *hw32_vptr;
 
   void process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr  input_cloud);
