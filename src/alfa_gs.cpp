@@ -123,7 +123,10 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
       //value = hardware_result[2];
       //if(value==1)
       if(hardware_result[3]==1)
+      {
         hw_ai_finish = 1;
+        ROS_INFO("ENTROU &&&&&&&&&&&&&&&&");
+      }
       else
         usleep(1);
     }
