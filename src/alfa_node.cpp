@@ -163,6 +163,7 @@ Mat AlfaNode::read_hardware_pointcloud(u64 *pointer, uint rows, uint cols)
                 row=0;
                 cout << "COL ->" << col << endl;
             }
+                cout << "addr ----" << pointer+i << endl;
                 hw_RI.at<ushort>(row, col) = a16_points[j]/100;
                 row++;
         }     
@@ -202,7 +203,7 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
                 row=0;
                 cout << "COL ->" << col << endl;
             }
-                hw_AI.at<ushort>(row, col) = ((*(six_points + point_cntr) >> (10*k)) & mask)/100;
+                hw_AI.at<ushort>(row, col) = ((*(six_points + point_cntr - 281473517355008) >> (10*k)) & mask)/100;
 
                 // cout << "original" << *(six_points + point_cntr) << endl;
                 // cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
@@ -223,7 +224,7 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
             }
                 hw_AI.at<ushort>(row, col) = ((*(six_points + point_cntr) >> (10*j)) & mask)/100;
 
-                cout << "addr" << six_points + point_cntr << endl;
+                cout << "addr " << six_points + point_cntr << endl;
                 cout << "original" << *(six_points + point_cntr) << endl;
                 cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
 
