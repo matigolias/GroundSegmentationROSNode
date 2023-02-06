@@ -206,7 +206,8 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
                 row=0;
                 cout << "COL ->" << col << endl;
             }
-                hw_AI.at<ushort>(row, col) = ((*six_points >> (10*k)) & ten_bit_mask)/100; //- 281473517355008
+                *six_points = *six_points >> (10*k);
+                hw_AI.at<ushort>(row, col) = (*six_points & ten_bit_mask)/100; 
 
                 // cout << "original" << *(six_points + point_cntr) << endl;
                 // cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
@@ -225,7 +226,8 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
                 row=0;
                 cout << "COL ->" << col << endl;
             }
-                hw_AI.at<ushort>(row, col) = ((*six_points >> (10*j)) & ten_bit_mask)/100;
+                *six_points = *six_points >> (10*j);
+                hw_AI.at<ushort>(row, col) = (*six_points & ten_bit_mask)/100; 
 
                 cout << "addr " << six_points << endl;
                 cout << "original " << std::hex << *(six_points) << endl;
