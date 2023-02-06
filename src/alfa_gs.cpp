@@ -135,7 +135,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
         usleep(1);
     }
 
-    Mat hw_angle_image = read_hardware_filtered_angle_image(ddr_pointer+130400, n_beams_, n_cols_);//ddr_pointer_2    230400
+    Mat hw_angle_image = read_hardware_filtered_angle_image(ddr_pointer_2, n_beams_, n_cols_);//  230400
 
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
