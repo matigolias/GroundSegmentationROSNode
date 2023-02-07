@@ -182,7 +182,7 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
 {
     Mat hw_AI = Mat::zeros(rows, cols, CV_16UC1);
 
-    uint size = (rows-1) * cols;
+    uint size = rows * cols;
     uint ddrSize = size/4; // since each position has 16 bits, 16*4=64 bit blocks
     uint8_t row = 0;
     uint16_t col = 0;
