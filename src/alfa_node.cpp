@@ -184,7 +184,7 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
 
     uint size = rows * cols;
     uint ddrSize = size/4; // since each position has 16 bits, 16*4=64 bit blocks
-    uint8_t row = 0;
+    uint16_t row = 0;
     uint16_t col = 0;
     const uint16_t ten_bit_mask = 0x3FF;  
     uint32_t point_cntr = 0;
@@ -239,7 +239,7 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
                 cout << "ORIGINAL " << std::hex << *(six_points) << endl;
                 cout << "SEGMENTED " << std::hex << hw_AI.at<ushort>(row, col) << endl;
                 //cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
-                printf("angle * 100 -> %d", hw_AI.at<ushort>(row, col));
+                printf("angle * 100 -> %d \n", hw_AI.at<ushort>(row, col));
 
                 cout << "row - " << row << endl;
                 cout << "col - " << col << endl;
