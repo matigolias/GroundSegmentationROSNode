@@ -195,8 +195,6 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
         //uint16_t a16_points[4];
         //memcpy((void*)(a16_points), pointer+i, sizeof(uint16_t)*4);
 
-        six_points = six_points +1;
-
         if(burst_cntr == 42)
         {
             for(int k=0; k<4; k++){
@@ -241,8 +239,8 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
                 //cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
                 printf("angle * 100 -> %d \n", hw_AI.at<ushort>(row, col));
 
-                cout << "row - " << row << endl;
-                cout << "col - " << col << endl;
+                printf("row - %d \n", row);
+                printf("col - %d \n", col);
 
                 *six_points = *six_points >> 10;
 
@@ -251,6 +249,8 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
             } 
             burst_cntr ++;  
         }  
+
+        six_points = six_points +1;
     }
     cout << "Angle Image" << endl; 
         
