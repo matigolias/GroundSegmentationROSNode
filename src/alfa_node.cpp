@@ -227,10 +227,10 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
                 cout << "COL ->" << col << endl;
             }
                 hw_AI.at<ushort>(row, col) = *six_points & ten_bit_mask; 
-                // cout << "addr " << six_points << endl;
-                // cout << "original " << std::hex << *(six_points) << endl;
-                // cout << "segmented " << std::hex << hw_AI.at<ushort>(row, col) << endl;
-                // cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
+                cout << "addr " << six_points << endl;
+                cout << "original " << std::hex << *(six_points) << endl;
+                cout << "segmented " << std::hex << hw_AI.at<ushort>(row, col) << endl;
+                cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
 
                 *six_points = *six_points >> 10;
 
