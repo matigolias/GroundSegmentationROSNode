@@ -205,15 +205,15 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
             }
                 hw_AI.at<ushort>(row, col) = *six_points & ten_bit_mask; 
 
-                cout << "----------------4 Pontos------------------" << endl;
-                cout << "addr " << six_points << endl;
-                cout << "ORIGINAL " << std::hex << *(six_points) << endl;
-                cout << "SEGMENTED " << std::hex << hw_AI.at<ushort>(row, col) << endl;
-                //cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
-                printf("angle * 100 -> %d", hw_AI.at<ushort>(row, col));
+                // cout << "----------------4 Pontos------------------" << endl;
+                // cout << "addr " << six_points << endl;
+                // cout << "ORIGINAL " << std::hex << *(six_points) << endl;
+                // cout << "SEGMENTED " << std::hex << hw_AI.at<ushort>(row, col) << endl;
+                // //cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
+                // printf("angle * 100 -> %d", hw_AI.at<ushort>(row, col));
 
-                cout << "row - " << row << endl;
-                cout << "col - " << col << endl;
+                // cout << "row - " << row << endl;
+                // cout << "col - " << col << endl;
 
                 *six_points = *six_points >> 10;
 
@@ -225,22 +225,22 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
         else
         {
             for(uint j=0; j<6; j++){
-            if(row>=63)
+            if(row>63)
             {
                 col++;
                 row=0;
             }
                 hw_AI.at<ushort>(row, col) = *six_points & ten_bit_mask; 
 
-                cout << "-----------------//------------------" << endl;
-                cout << "addr " << six_points << endl;
-                cout << "ORIGINAL " << std::hex << *(six_points) << endl;
-                cout << "SEGMENTED " << std::hex << hw_AI.at<ushort>(row, col) << endl;
-                //cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
-                printf("angle * 100 -> %d \n", hw_AI.at<ushort>(row, col));
+                // cout << "-----------------//------------------" << endl;
+                // cout << "addr " << six_points << endl;
+                // cout << "ORIGINAL " << std::hex << *(six_points) << endl;
+                // cout << "SEGMENTED " << std::hex << hw_AI.at<ushort>(row, col) << endl;
+                // //cout << "angle ->" << hw_AI.at<ushort>(row, col) << endl;
+                // printf("angle * 100 -> %d \n", hw_AI.at<ushort>(row, col));
 
-                printf("row - %d \n", row);
-                printf("col - %d \n", col);
+                // printf("row - %d \n", row);
+                // printf("col - %d \n", col);
 
                 *six_points = *six_points >> 10;
 
