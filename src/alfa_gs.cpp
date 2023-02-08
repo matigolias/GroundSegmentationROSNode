@@ -555,7 +555,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 
   ROS_INFO("col %d - row %d", angle_image.cols, angle_image.rows);
 
-  double max_angle_image = 700; //software 0?, hardware 700  
+  double max_angle_image = 500; //software 0?, hardware 700  
 
   for (int row = 0; row < angle_image.rows; row++) 
   {
