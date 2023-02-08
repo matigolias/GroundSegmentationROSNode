@@ -198,12 +198,12 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
         if(burst_cntr == 42)
         {
             for(int k=0; k<4; k++){
-            if(row>=63)
+            if(row>=63)//colocar macro rows
             {
                 col++;
                 row=0;
             }
-                hw_AI.at<ushort>(row, col) = *six_points & ten_bit_mask; 
+                hw_AI.at<ushort>(63-row, col) = *six_points & ten_bit_mask; 
 
                 // cout << "----------------4 Pontos------------------" << endl;
                 // cout << "addr " << six_points << endl;
@@ -230,7 +230,7 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
                 col++;
                 row=0;
             }
-                hw_AI.at<ushort>(row, col) = *six_points & ten_bit_mask; 
+                hw_AI.at<ushort>(63-row, col) = *six_points & ten_bit_mask; 
 
                 // cout << "-----------------//------------------" << endl;
                 // cout << "addr " << six_points << endl;
