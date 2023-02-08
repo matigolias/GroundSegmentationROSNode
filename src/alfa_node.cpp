@@ -251,7 +251,6 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
 
         six_points = six_points +1;
     }
-
     return hw_AI;
 }
 
