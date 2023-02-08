@@ -95,6 +95,10 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
 {
   if(hw)
   {
+    double ground_angle_threshold = 50;
+    double start_angle_threshold = 300;
+    int kernel_size = 3;
+
     //store point cloud
     auto start_store_hw = std::chrono::high_resolution_clock::now();
     store_pointcloud_hardware(input_cloud, ddr_pointer);
@@ -129,13 +133,12 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
       if(hardware_result[3]==1)
       {
         hw_ai_finish = 1;
-        ROS_INFO("ENTROU &&&&&&&&&&&&&&&&");
       }
       else
         usleep(1);
     }
 
-    Mat hw_angle_image = read_hardware_filtered_angle_image(ddr_pointer_2, n_beams_, n_cols_);//  230400
+    Mat hw_smoothed_angle_image = read_hardware_filtered_angle_image(ddr_pointer_2, n_beams_, n_cols_);//  230400
 
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
@@ -144,8 +147,11 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(hw_range_image, cinfo_);
     // update header
     //publish_range_img(hw_range_image, cinfo_); 
-    publish_range_img(hw_angle_image, cinfo_);
-    publish_pointcloud(seg_point_cloud);
+    //publish_pointcloud(seg_point_cloud);
+
+    Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, ground_angle_threshold , start_angle_threshold, kernel_size);
+
+    publish_range_img(hw_no_ground_image, cinfo_);
   }
   else
   {

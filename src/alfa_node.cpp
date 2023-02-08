@@ -29,8 +29,7 @@ void AlfaNode::publish_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
     // cloud.header.seq = pcl2_Header_seq;
     // //cloud.header.stamp = ros::Time::now();
     // pcl2_Header_seq++;
-    // cloud_publisher.publish(cloud); //publish the point cloud in the ROS topic
-    
+    // cloud_publisher.publish(cloud); //publish the point cloud in the ROS topic  
 
     sensor_msgs::PointCloud2 pcl2_frame;
     pcl::toROSMsg(*cloud, pcl2_frame);   //conver the pcl object to the pointcloud2 one
@@ -161,14 +160,14 @@ Mat AlfaNode::read_hardware_pointcloud(u64 *pointer, uint rows, uint cols)
             {
                 col++;
                 row=0;
-                cout << "COL ->" << col << endl;
+                //cout << "COL ->" << col << endl;
             }
                 //cout << "addr ----" << pointer+i << endl;
                 hw_RI.at<ushort>(row, col) = a16_points[j]/100;
                 row++;
         }     
     }
-    cout << "DDR Size ->" << ddrSize << endl; 
+    //cout << "DDR Size ->" << ddrSize << endl; 
         
         #ifdef DEBUG
         // cout<< "First bits: "<< hex<< a16_points[0]<< " Second bits: "<< hex<< a16_points[1]<<endl;
@@ -252,12 +251,6 @@ Mat AlfaNode::read_hardware_filtered_angle_image(u64 *six_points, uint rows, uin
 
         six_points = six_points +1;
     }
-    cout << "Angle Image" << endl; 
-        
-        #ifdef DEBUG
-        // cout<< "First bits: "<< hex<< a16_points[0]<< " Second bits: "<< hex<< a16_points[1]<<endl;
-        // cout << "Obtained coordinate: X:"<< hex<< p.x<< "; Y: "<<hex <<p.y<< "; Z: "<<hex<<p.z<< "; Intensity: "<<p.intensity<<endl;
-        #endif
 
     return hw_AI;
 }
