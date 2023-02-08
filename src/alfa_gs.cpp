@@ -95,7 +95,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
 {
   if(hw)
   {
-    double hw_ground_angle_threshold = 0.65;//65/100;
+    double hw_ground_angle_threshold = 0.65;//65/100;//passar de rad para degree
     double hw_start_angle_threshold = 3;//300/100;
 
     //store point cloud
@@ -149,8 +149,9 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     //publish_pointcloud(seg_point_cloud);
 
     Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, hw_ground_angle_threshold , hw_start_angle_threshold, window_size);
+    Mat coloredangleimage = CreateColoredAngleImage(hw_smoothed_angle_image);
 
-    publish_range_img(hw_no_ground_image, cinfo_);
+    publish_range_img(coloredangleimage, cinfo_);
   }
   else
   {
@@ -547,6 +548,56 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
             labeled_gnd_cntr, seg_gnd_cntr, true_detected_gnd_cntr, percentage_of_correct_gnd, percentage_of_incorrect_gnd);
 
   }
+
+  Mat Cloud2RangeNode::CreateColoredAngleImage(Mat angle_image)
+{
+  Mat colored_angle_image(angle_image.size(), CV_8UC3, cv::Scalar(0, 0, 255));
+
+  ROS_INFO("col %d - row %d", angle_image.cols, angle_image.rows);
+
+  double max_angle_image = 700; //software 0?, hardware 700  
+
+  for (int row = 0; row < angle_image.rows; row++) 
+  {
+    for (int col = 0; col < angle_image.cols; col++) 
+    {
+      //float angle = angle_image.at<float>(row, col); Software
+      ushort angle = angle_image.at<ushort>(row, col);
+
+      if(angle > max_angle_image)
+      max_angle_image = angle;
+
+      angle = (255/max_angle_image)*angle;
+
+
+      //ROS_INFO("------------------range_en %d ,  range_norm %f, range %f,  max range %f", range_encoded, range_norm, range, max_range);
+
+
+      if(angle == 0)
+      {
+        colored_angle_image.at<cv::Vec3b>(row, col)[0] = 0;
+        colored_angle_image.at<cv::Vec3b>(row, col)[1] = 0;
+        colored_angle_image.at<cv::Vec3b>(row, col)[2] = 0;
+      }
+
+      else if(angle >= 128)
+      {
+        colored_angle_image.at<cv::Vec3b>(row, col)[0] = (angle - 128) * 2;
+        colored_angle_image.at<cv::Vec3b>(row, col)[1] = 255 - ((angle-128) * 2);
+        colored_angle_image.at<cv::Vec3b>(row, col)[2] = 0;
+      }
+
+      else 
+      {
+        colored_angle_image.at<cv::Vec3b>(row, col)[0] = 0;
+        colored_angle_image.at<cv::Vec3b>(row, col)[1] = angle * 2;
+        colored_angle_image.at<cv::Vec3b>(row, col)[2] = 255 - (2 * angle);
+      }
+    }
+  }
+
+  return colored_angle_image;
+}
 
   pcl::PointCloud<PointT>::Ptr Cloud2RangeNode::CameraCb(cv::Mat range_image, const sensor_msgs::CameraInfo cinfo_) {
   // Convert to image
