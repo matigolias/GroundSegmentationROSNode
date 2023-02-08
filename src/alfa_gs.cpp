@@ -95,8 +95,8 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
 {
   if(hw)
   {
-    double hw_ground_angle_threshold = 80/100;
-    double hw_start_angle_threshold = 300/100;
+    double hw_ground_angle_threshold = 0.8;//80/100;
+    double hw_start_angle_threshold = 3;//300/100;
 
     //store point cloud
     auto start_store_hw = std::chrono::high_resolution_clock::now();
