@@ -55,12 +55,19 @@ public:
      */
     void publish_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
 
-        /**
+    /**
      * @brief Function that publishes a range image in a ROS Topic
      * 
      * @param range_img Range image that will be published in a ROS Topic
      */
     void publish_range_img(Mat range_img, sensor_msgs::CameraInfo cinfo_);
+
+    /**
+     * @brief Function that publishes a colored image in a ROS Topic
+     * 
+     * @param range_img Range image that will be published in a ROS Topic
+     */
+    void publish_colored_img(Mat range_img, sensor_msgs::CameraInfo cinfo_);
 
     /**
      * @brief Function that published the collected metrics during execution in a ROS Topic

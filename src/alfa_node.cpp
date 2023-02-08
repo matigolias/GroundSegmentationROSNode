@@ -53,7 +53,21 @@ void AlfaNode::publish_range_img(Mat range_img, sensor_msgs::CameraInfo cinfo_)
 
     cv_bridge::CvImage cv_image(pcl2_frame.header, "mono16", range_img);/////// res_image
     range_img_publisher.publish(*cv_image.toImageMsg(), cinfo_); // @todo retirar cinfo?
+}
 
+void AlfaNode::publish_colored_img(Mat range_img, sensor_msgs::CameraInfo cinfo_) 
+{
+
+     sensor_msgs::PointCloud2 pcl2_frame;
+    // pcl2_frame.header.frame_id = node_name+"_pointcloud";  // Create the pointcloud2 header to publish
+    // pcl2_frame.header.seq = pcl2_Header_seq;
+    // pcl2_frame.header.stamp = ros::Time::now();
+    // pcl2_Header_seq++;
+    cinfo_.header = pcl2_frame.header;
+
+
+    cv_bridge::CvImage cv_image(pcl2_frame.header, "rgb8", range_img);/////// res_image
+    range_img_publisher.publish(*cv_image.toImageMsg(), cinfo_); // @todo retirar cinfo?
 }
 
 void AlfaNode::publish_metrics(alfa_msg::AlfaMetrics &metrics)
