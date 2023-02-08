@@ -97,7 +97,6 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   {
     double ground_angle_threshold = 50;
     double start_angle_threshold = 300;
-    int kernel_size = 3;
 
     //store point cloud
     auto start_store_hw = std::chrono::high_resolution_clock::now();
@@ -149,7 +148,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     //publish_range_img(hw_range_image, cinfo_); 
     //publish_pointcloud(seg_point_cloud);
 
-    Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, ground_angle_threshold , start_angle_threshold, kernel_size);
+    Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, ground_angle_threshold , start_angle_threshold, window_size);
 
     publish_range_img(hw_no_ground_image, cinfo_);
   }
