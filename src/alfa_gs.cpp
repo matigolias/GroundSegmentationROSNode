@@ -151,7 +151,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, hw_ground_angle_threshold , hw_start_angle_threshold, window_size);
     Mat coloredangleimage = CreateColoredAngleImage(hw_smoothed_angle_image);
 
-    publish_range_img(coloredangleimage, cinfo_);
+    publish_colored_img(coloredangleimage, cinfo_);
   }
   else
   {
