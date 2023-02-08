@@ -91,7 +91,7 @@ void Label::LabelOneComponent(uint8_t label, int row, int col, float ground_angl
 
         // std::cout << "Row - " << current.row << " Col - " << current.col << " Val - " <<  smoothed_image.at<ushort>(current.row, current.col) << "\n";
         // std::cout << "N-Row - " << neighbor.row << " N-Col - " << neighbor.col << " N-Val - " <<  smoothed_image.at<ushort>(neighbor.row, neighbor.col) << "\n";
-        std::cout << "DIFERENCE - " << diff << " GND_ANG_THRESHOLD * 100 - " << ground_angle_threshold * 100 << "\n\n";
+        // std::cout << "DIFERENCE - " << diff << " GND_ANG_THRESHOLD * 100 - " << ground_angle_threshold * 100 << "\n\n";
 
         // if (smoothed_image.at<ushort>(neighbor.row, neighbor.col) > 60)
         // continue;
