@@ -95,7 +95,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
 {
   if(hw)
   {
-    double hw_ground_angle_threshold = 50/100;
+    double hw_ground_angle_threshold = 80/100;
     double hw_start_angle_threshold = 300/100;
 
     //store point cloud

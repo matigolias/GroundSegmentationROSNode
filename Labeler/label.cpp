@@ -47,7 +47,6 @@ uint16_t Label::WrapCols(int16_t col)
 //Breadth First Search
 void Label::LabelOneComponent(uint8_t label, int row, int col, float ground_angle_threshold, Mat range_image, Mat smoothed_image)
 {
-
     pixel_coord start = pixel_coord(row ,col);
     std::queue<pixel_coord> labeling_queue;
     labeling_queue.push(start);
@@ -92,11 +91,10 @@ void Label::LabelOneComponent(uint8_t label, int row, int col, float ground_angl
 
         // std::cout << "Row - " << current.row << " Col - " << current.col << " Val - " <<  smoothed_image.at<ushort>(current.row, current.col) << "\n";
         // std::cout << "N-Row - " << neighbor.row << " N-Col - " << neighbor.col << " N-Val - " <<  smoothed_image.at<ushort>(neighbor.row, neighbor.col) << "\n";
-        // std::cout << "DIFERENCE - " << diff << " GND_ANG_THRESHOLD * 100 - " << ground_angle_threshold * 100 << "\n\n";
+        std::cout << "DIFERENCE - " << diff << " GND_ANG_THRESHOLD * 100 - " << ground_angle_threshold * 100 << "\n\n";
 
         // if (smoothed_image.at<ushort>(neighbor.row, neighbor.col) > 60)
         // continue;
-
 
         if (diff < ground_angle_threshold * 100) {
           labeling_queue.push(neighbor);
