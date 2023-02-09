@@ -568,14 +568,14 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
       if(angle > max_angle_image)
       max_angle_image = angle;
 
-      ROS_INFO("------------------OG Angle  %d", angle); 
+      ROS_INFO("------------------OG Angle  %hu", angle); 
       ROS_INFO("------------------Max Angle  %d", max_angle_image);
 
       angle = (255/max_angle_image)*angle;
 
 
       // ROS_INFO("------------------range_en %d ,  range_norm %f, range %f,  max range %f", range_encoded, range_norm, range, max_range);
-      ROS_INFO("------------------Transformed Angle  %d", angle);
+      ROS_INFO("------------------Transformed Angle  %hu", angle);
 
 
       if(angle == 0)
