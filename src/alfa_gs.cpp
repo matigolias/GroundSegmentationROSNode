@@ -555,7 +555,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 
   ROS_INFO("col %d - row %d", angle_image.cols, angle_image.rows);
 
-  double max_angle_image = 0; //software 0?, hardware 700  
+  double max_angle_image = 400; //software 0?, hardware 700  
 
   for (int row = 0; row < angle_image.rows; row++) 
   {
@@ -564,8 +564,8 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
       //float angle = angle_image.at<float>(row, col); Software
       ushort angle = angle_image.at<ushort>(row, col);
 
-      if(angle > max_angle_image)
-      max_angle_image = angle;
+      // if(angle > max_angle_image)
+      // max_angle_image = angle;
 
       angle = (255/max_angle_image)*angle;
 
@@ -580,7 +580,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
         colored_angle_image.at<cv::Vec3b>(row, col)[2] = 0;
       }
 
-      else if(angle >= 240)//128
+      else if(angle >= 128)
       {
         colored_angle_image.at<cv::Vec3b>(row, col)[0] = (angle - 128) * 2;
         colored_angle_image.at<cv::Vec3b>(row, col)[1] = 255 - ((angle-128) * 2);
