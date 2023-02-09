@@ -555,7 +555,8 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 
   ROS_INFO("col %d - row %d", angle_image.cols, angle_image.rows);
 
-  double max_angle_image = 400; //software 0?, hardware 700  
+  //double max_angle_image = 0; 
+  int max_angle_image = 0;
 
   for (int row = 0; row < angle_image.rows; row++) 
   {
@@ -564,13 +565,17 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
       //float angle = angle_image.at<float>(row, col); Software
       ushort angle = angle_image.at<ushort>(row, col);
 
-      // if(angle > max_angle_image)
-      // max_angle_image = angle;
+      if(angle > max_angle_image)
+      max_angle_image = angle;
+
+      ROS_INFO("------------------OG Angle  %d", angle); 
+      ROS_INFO("------------------Max Angle  %d", max_angle_image);
 
       angle = (255/max_angle_image)*angle;
 
 
-      //ROS_INFO("------------------range_en %d ,  range_norm %f, range %f,  max range %f", range_encoded, range_norm, range, max_range);
+      // ROS_INFO("------------------range_en %d ,  range_norm %f, range %f,  max range %f", range_encoded, range_norm, range, max_range);
+      ROS_INFO("------------------Transformed Angle  %d", angle);
 
 
       if(angle == 0)
