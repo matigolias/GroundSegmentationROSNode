@@ -580,7 +580,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
         colored_angle_image.at<cv::Vec3b>(row, col)[2] = 0;
       }
 
-      else if(angle >= 128)
+      else if(angle >= 175)//128
       {
         colored_angle_image.at<cv::Vec3b>(row, col)[0] = (angle - 128) * 2;
         colored_angle_image.at<cv::Vec3b>(row, col)[1] = 255 - ((angle-128) * 2);
