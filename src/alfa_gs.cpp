@@ -143,7 +143,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
     ROS_INFO("TOTAL DURATION -> %ld ms", duration_hw_RI.count());
 
-    pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(hw_range_image, cinfo_);
+    pcl::PointCloud<PointT>::Ptr og_point_cloud = CameraCb(hw_range_image, cinfo_);
     // update header
     //publish_range_img(hw_range_image, cinfo_); 
     //publish_pointcloud(seg_point_cloud);
@@ -154,7 +154,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     Mat coloredangleimage = CreateColoredAngleImage(hw_smoothed_angle_image);
 
     publish_range_img(hw_no_ground_image, cinfo_); 
-    publish_pointcloud(hw_seg_point_cloud);
+    publish_pointcloud(og_point_cloud);
     //publish_colored_img(coloredangleimage, cinfo_);
   }
   else
@@ -646,17 +646,26 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
     const auto row_ptr = range_image.ptr<ushort>(r);
     for (int c = 0; c < range_image.cols; ++c) {
       const ushort range_encoded = row_ptr[c];
+      double range;
 
       // skip points with 0 range
       if (range_encoded == 0) {
         continue;
       }
 
-      const double range_norm = static_cast<double>(range_encoded - 1) /
-                                (std::numeric_limits<ushort>::max() - 1);
-      const double range = range_norm * (max_range - min_range) + min_range;
+      if(hw)
+      {
+        range = range_encoded/100;
+      }
 
-      //ROS_INFO("RANGE %f",range);
+      else
+      {
+        const double range_norm = static_cast<double>(range_encoded - 1) /
+                                  (std::numeric_limits<ushort>::max() - 1);
+        //const double range = range_norm * (max_range - min_range) + min_range;
+        range = range_norm * (max_range - min_range) + min_range;
+        //ROS_INFO("RANGE %f",range);
+      }
 
       //const auto altitude = r * d_altitude + min_angle;
       const auto altitude = (range_image.rows - r) * d_altitude + min_angle;
