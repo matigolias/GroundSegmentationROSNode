@@ -646,7 +646,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
     const auto row_ptr = range_image.ptr<ushort>(r);
     for (int c = 0; c < range_image.cols; ++c) {
       const ushort range_encoded = row_ptr[c];
-      double range;
+      float range = 0;
 
       // skip points with 0 range
       if (range_encoded == 0) {
@@ -656,6 +656,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
       if(hw)
       {
         range = range_encoded/100;
+        ROS_INFO("RANGE %f  ---  RANGE ENCODED %d", range, range_encoded);
       }
 
       else
@@ -666,8 +667,6 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
         range = range_norm * (max_range - min_range) + min_range;
         //ROS_INFO("RANGE %f",range);
       }
-
-      ROS_INFO("RANGE %f",range);
 
       //const auto altitude = r * d_altitude + min_angle;
       const auto altitude = (range_image.rows - r) * d_altitude + min_angle;
