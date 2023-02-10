@@ -154,7 +154,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     Mat coloredangleimage = CreateColoredAngleImage(hw_smoothed_angle_image);
 
     publish_range_img(hw_no_ground_image, cinfo_); 
-    publish_pointcloud(og_point_cloud);
+    publish_pointcloud(hw_seg_point_cloud);
     //publish_colored_img(coloredangleimage, cinfo_);
   }
   else
