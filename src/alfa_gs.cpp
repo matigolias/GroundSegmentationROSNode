@@ -667,6 +667,8 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
         //ROS_INFO("RANGE %f",range);
       }
 
+      ROS_INFO("RANGE %f",range);
+
       //const auto altitude = r * d_altitude + min_angle;
       const auto altitude = (range_image.rows - r) * d_altitude + min_angle;
       //const auto altitude = HDL_64_vert_angle[n_beams_-1-r];
