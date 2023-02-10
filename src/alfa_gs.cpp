@@ -657,7 +657,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
       if(hw)
       {
         range = row_ptr[c]/100.0;
-        ROS_INFO("RANGE %f  ---  ROW_ptr %d", range, row_ptr[c]);
+        //ROS_INFO("RANGE %f  ---  ROW_ptr %d", range, row_ptr[c]);
       }
 
       else
@@ -679,7 +679,6 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
       point.y = std::cos(altitude) * std::sin(azimuth) * range;
       point.z = std::sin(altitude) * range;
       cloud.points.push_back(point);
-      ROS_INFO("x %f --- ", point.x);
     }
   }
 
