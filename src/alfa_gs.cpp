@@ -7,6 +7,7 @@
 using namespace cloud2range;
 using PointT = pcl::PointXYZI;
 using namespace std::chrono;
+using cv::DataType;
 
 Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_msg::ConfigMessage>* default_configurations):AlfaNode (node_name,node_type,default_configurations)
 {
@@ -643,7 +644,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
   cloud.points.reserve(range_image.rows * range_image.cols);
 
   for (int r = 0; r < range_image.rows; ++r) {
-    const auto row_ptr = range_image.ptr<ushort>(r);
+    const auto row_ptr = range_image.ptr<float>(r);
     for (int c = 0; c < range_image.cols; ++c) {
       const ushort range_encoded = row_ptr[c];
       float range = 0;
@@ -655,7 +656,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 
       if(hw)
       {
-        range = range_encoded;
+        range = row_ptr[c];
         //ROS_INFO("RANGE %f  ---  RANGE ENCODED %d", range, range_encoded);
       }
 
