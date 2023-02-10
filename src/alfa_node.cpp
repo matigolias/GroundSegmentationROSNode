@@ -159,8 +159,7 @@ Mat AlfaNode::read_hardware_pointcloud(u64 *pointer, uint rows, uint cols)
     // pcl::PointCloud<pcl::PointXYZI>::Ptr return_cloud;
     // return_cloud.reset(new pcl::PointCloud<pcl::PointXYZI>);
 
-    //Mat hw_RI = Mat::zeros(64, 1800, CV_16UC1);
-    Mat hw_RI = Mat::zeros(64, 1800, DataType<float>::type);
+    Mat hw_RI = Mat::zeros(64, 1800, CV_16UC1);
 
     uint size = rows * cols;
     uint ddrSize = size/4; // since each position has 16 bits, 16*4=64 bit blocks
@@ -179,7 +178,7 @@ Mat AlfaNode::read_hardware_pointcloud(u64 *pointer, uint rows, uint cols)
                 //cout << "COL ->" << col << endl;
             }
                 //cout << "addr ----" << pointer+i << endl;
-                hw_RI.at<float>(row, col) = a16_points[j]/100;
+                hw_RI.at<ushort>(row, col) = a16_points[j];
                 //hw_RI.at<ushort>(row, col) = a16_points[j]/100;
                 row++;
         }     
