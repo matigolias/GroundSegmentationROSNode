@@ -655,8 +655,8 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 
       if(hw)
       {
-        range = range_encoded/100;
-        ROS_INFO("RANGE %f  ---  RANGE ENCODED %d", range, range_encoded);
+        range = range_encoded;
+        //ROS_INFO("RANGE %f  ---  RANGE ENCODED %d", range, range_encoded);
       }
 
       else
