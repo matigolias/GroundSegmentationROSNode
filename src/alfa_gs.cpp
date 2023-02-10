@@ -149,9 +149,13 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     //publish_pointcloud(seg_point_cloud);
 
     Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, hw_ground_angle_threshold , hw_start_angle_threshold, window_size);
+    pcl::PointCloud<PointT>::Ptr hw_seg_point_cloud = CameraCb(hw_no_ground_image, cinfo_);
+
     Mat coloredangleimage = CreateColoredAngleImage(hw_smoothed_angle_image);
 
-    publish_colored_img(coloredangleimage, cinfo_);
+    publish_range_img(hw_no_ground_image, cinfo_); 
+    publish_pointcloud(hw_seg_point_cloud);
+    //publish_colored_img(coloredangleimage, cinfo_);
   }
   else
   {
@@ -593,7 +597,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
         colored_angle_image.at<cv::Vec3b>(row, col)[2] = 0;
       }
 
-      else if(angle >= 200)
+      else if(angle >= 128)
       {
         colored_angle_image.at<cv::Vec3b>(row, col)[0] = (angle - 128) * 2;
         colored_angle_image.at<cv::Vec3b>(row, col)[1] = 255 - ((angle-128) * 2);
