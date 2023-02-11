@@ -650,9 +650,9 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
   pcl::PointCloud<PointT> cloud;
   cloud.points.reserve(range_image.rows * range_image.cols);
 
-  for (int r = 0; r < range_image.rows; ++r) {
+  for (int r = 0; r < range_image.rows-6; ++r) {
     const auto row_ptr = range_image.ptr<ushort>(r);
-    for (int c = 0; c < 54; ++c) {
+    for (int c = 0; c < range_image.cols; ++c) {
       const ushort range_encoded = row_ptr[c];
       float range = 0;
 
