@@ -15,7 +15,7 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
 
   window_size =  5; // 5, 7, 9, 11
   ROS_ASSERT(window_size == 5 || 7 || 9 || 11);
-  ground_angle_threshold = 0.5223;//0.087266); //5º
+  ground_angle_threshold = 0.087266;//0.087266); //5º
   ROS_ASSERT(ground_angle_threshold > 0);
   start_angle_threshold = 0.523598; //30º
   ROS_ASSERT(ground_angle_threshold > 0);
@@ -151,12 +151,13 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
 
     Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, hw_ground_angle_threshold , hw_start_angle_threshold, window_size);
     pcl::PointCloud<PointT>::Ptr hw_seg_point_cloud = CameraCb(hw_no_ground_image, cinfo_);
+    pcl::PointCloud<PointT>::Ptr hw_og_point_cloud = CameraCb(hw_range_image, cinfo_);
 
-    Mat coloredangleimage = CreateColoredAngleImage(hw_smoothed_angle_image);
+    Mat coloredrangeimage = CreateColoredAngleImage(hw_range_image);
 
-    publish_range_img(hw_no_ground_image, cinfo_); 
-    publish_pointcloud(hw_seg_point_cloud);
-    //publish_colored_img(coloredangleimage, cinfo_);
+    //publish_range_img(hw_no_ground_image, cinfo_); 
+    publish_pointcloud(hw_og_point_cloud);
+    publish_colored_img(coloredrangeimage, cinfo_);
   }
   else
   {
@@ -167,6 +168,9 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   // pcl_conversions::toPCL(*cloud_msg, pcl_pc2);
   // fromPCLPointCloud2(pcl_pc2, *cloud_XYZIR);
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  
+
     Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
 
     //  int row = 0;
@@ -239,12 +243,14 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     ROS_INFO("INV_ALTITUDE -> %d", a);
     ROS_INFO("INV_RANGE -> %d", r);
 
-    auto start_gs = high_resolution_clock::now();
+    
 
     Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
     Mat angle_image = CreateAngleImg(repaired_range_image);
     Mat smoothed_image = SavitskyGolaySmoothing(angle_image, window_size);
     //Mat res_image = CreateResImage (range_image, smoothed_image);
+
+    auto start_gs = high_resolution_clock::now();
 
     Mat no_ground_image = EraseGroundBFS (range_image, smoothed_image, ground_angle_threshold, start_angle_threshold, window_size);
 
