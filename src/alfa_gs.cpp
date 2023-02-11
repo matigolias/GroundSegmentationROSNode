@@ -124,7 +124,8 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
         usleep(1);
     }
 
-    Mat hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
+    Mat hw_range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1);
+    hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
 
     while(!hw_ai_finish){
       vector<uint32_t> hardware_result = read_hardware_registers(hw32_vptr, 4);
@@ -138,7 +139,8 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
         usleep(1);
     }
 
-    Mat hw_smoothed_angle_image = read_hardware_filtered_angle_image(ddr_pointer_2, n_beams_, n_cols_);//  230400
+    Mat hw_smoothed_angle_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1);
+    hw_smoothed_angle_image = read_hardware_filtered_angle_image(ddr_pointer_2, n_beams_, n_cols_);//  230400
 
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);

@@ -386,7 +386,6 @@ void AlfaNode::subscribe_topics()
     cloud_publisher = n.advertise<sensor_msgs::PointCloud2>(string(node_name).append("_cloud"),1);
     m_spin_thread = new boost::thread(&AlfaNode::spin, this);
 
-
 }
 
 void AlfaNode::ticker_thread()
