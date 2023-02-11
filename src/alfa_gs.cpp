@@ -146,7 +146,6 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
     ROS_INFO("TOTAL DURATION -> %ld ms", duration_hw_RI.count());
 
-    pcl::PointCloud<PointT>::Ptr og_point_cloud = CameraCb(hw_range_image, cinfo_);
     // update header
     //publish_range_img(hw_range_image, cinfo_); 
     //publish_pointcloud(seg_point_cloud);
@@ -653,7 +652,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 
   for (int r = 0; r < range_image.rows; ++r) {
     const auto row_ptr = range_image.ptr<ushort>(r);
-    for (int c = 0; c < range_image.cols; ++c) {
+    for (int c = 0; c < (range_image.cols)-4; ++c) {
       const ushort range_encoded = row_ptr[c];
       float range = 0;
 
