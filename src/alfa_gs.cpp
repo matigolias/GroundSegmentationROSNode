@@ -652,7 +652,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 
   for (int r = 0; r < range_image.rows; ++r) {
     const auto row_ptr = range_image.ptr<ushort>(r);
-    for (int c = 0; c < (range_image.cols)-4; ++c) {
+    for (int c = 0; c < 54; ++c) {
       const ushort range_encoded = row_ptr[c];
       float range = 0;
 
