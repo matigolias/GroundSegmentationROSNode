@@ -26,7 +26,8 @@
 #include "Labeler/label.h"
 #define TIMER_SLEEP 5000 // Time between alive messages
 
-#define CLOUD_TOPIC "alfa_pointcloud"  //Name of the subsriver topic where this node gets point clouds
+//#define CLOUD_TOPIC "alfa_pointcloud"  //Name of the subsriver topic where this node gets point clouds
+#define CLOUD_TOPIC "velodyne_points"  //Name of the subsriver topic where this node gets point clouds
 
 typedef long long int u64;
 using cv::Mat;

@@ -172,8 +172,6 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
   // fromPCLPointCloud2(pcl_pc2, *cloud_XYZIR);
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  
-
     Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
 
     //  int row = 0;
