@@ -42,7 +42,7 @@ int main(int argc, char** argv)
       default_configurations.push_back(parameter6);
 
 
-    Cloud2RangeNode new_node(NODE_NAME,NODE_TYPE,&default_configurations);
+    Alfa_GS new_node(NODE_NAME,NODE_TYPE,&default_configurations);
     while(ros::ok())
     {
 

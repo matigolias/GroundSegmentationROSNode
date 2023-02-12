@@ -102,7 +102,7 @@ alfa_msg::AlfaConfigure::Response AlfaNode::process_config(alfa_msg::AlfaConfigu
 //     }
 // }
 
-void AlfaNode::store_pointcloud_hardware(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud, u64 *pointer)
+void AlfaNode::store_pointcloud_hardware(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud, u64 *pointer)
 {
     int pointcloud_index = 0;
     uint16_t a16_points[4];

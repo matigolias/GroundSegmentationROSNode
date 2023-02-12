@@ -9,7 +9,7 @@ using PointT = pcl::PointXYZI;
 using namespace std::chrono;
 using cv::DataType;
 
-Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_msg::ConfigMessage>* default_configurations):AlfaNode (node_name,node_type,default_configurations)
+Alfa_GS::Alfa_GS(string node_name,string node_type,vector<alfa_msg::ConfigMessage>* default_configurations):AlfaNode (node_name,node_type,default_configurations)
 {
       // Read params
 
@@ -92,7 +92,7 @@ Cloud2RangeNode::Cloud2RangeNode(string node_name,string node_type,vector<alfa_m
 
 }
 
-void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud)
+void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud)
 {
   if(hw)
   {
@@ -157,8 +157,10 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
     Mat coloredrangeimage = CreateColoredAngleImage(hw_range_image);
 
     //publish_range_img(hw_no_ground_image, cinfo_); 
-    publish_pointcloud(hw_og_point_cloud);
+    publish_pointcloud(hw_seg_point_cloud);
     publish_colored_img(coloredrangeimage, cinfo_);
+
+    CheckNumberOfDetectedRIdGnd (hw_range_image, hw_no_ground_image, CreateLabeledRangeImage(input_cloud));
   }
   else
   {
@@ -268,7 +270,7 @@ void Cloud2RangeNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr in
   }
 }
 
-Mat Cloud2RangeNode::RepairGaps(const Mat no_ground_image, int step, float depth_threshold) {
+Mat Alfa_GS::RepairGaps(const Mat no_ground_image, int step, float depth_threshold) {
 
   Mat inpainted_depth = no_ground_image.clone();
 
@@ -303,7 +305,7 @@ Mat Cloud2RangeNode::RepairGaps(const Mat no_ground_image, int step, float depth
   return inpainted_depth;
 }
 
-Mat Cloud2RangeNode::CreateAngleImg(Mat range_image)
+Mat Alfa_GS::CreateAngleImg(Mat range_image)
 {
   //Mat angle_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1);
   Mat angle_image = Mat::zeros(range_image.rows, range_image.cols, CV_16UC1);
@@ -356,7 +358,7 @@ Mat Cloud2RangeNode::CreateAngleImg(Mat range_image)
   return angle_image;
 }
 
-Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
+Mat Alfa_GS::CreateResImage(Mat range_image, Mat smoothed_image)
 {
   Mat res_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1);
   //Mat res_image = range_image.clone();
@@ -402,7 +404,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
 //   }
 // }
 
-  Mat Cloud2RangeNode::GetUniformKernel(int window_size, int type) { //const {
+  Mat Alfa_GS::GetUniformKernel(int window_size, int type) { //const {
   if (window_size % 2 == 0) {
     throw std::logic_error("only odd window size allowed");
   }
@@ -413,7 +415,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
   return kernel;
 }
 
-  Mat Cloud2RangeNode::GetSavitskyGolayKernel(int window_size) {//const {
+  Mat Alfa_GS::GetSavitskyGolayKernel(int window_size) {//const {
   if (window_size % 2 == 0) {
     throw std::logic_error("only odd window size allowed");
   }
@@ -477,7 +479,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
   return kernel;
 }
 
-  Mat Cloud2RangeNode::SavitskyGolaySmoothing(const Mat& image, int window_size)
+  Mat Alfa_GS::SavitskyGolaySmoothing(const Mat& image, int window_size)
   {
     Mat kernel = GetSavitskyGolayKernel(window_size);
 
@@ -487,7 +489,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
     return smoothed_image;
   }
 
-  Mat Cloud2RangeNode::EraseGroundBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size)
+  Mat Alfa_GS::EraseGroundBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size)
   {
     Label Labeler(smoothed_image.rows, smoothed_image.cols);
     //Mat lable_image = Labeler.GetLabelImage();
@@ -532,36 +534,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
     return res_image;
   }
 
-   void Cloud2RangeNode::CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image){
-    
-    int seg_gnd_cntr=0, true_detected_gnd_cntr=0, labeled_gnd_cntr=0, percentage_of_correct_gnd=0, percentage_of_incorrect_gnd=0;
-
-    for (int col=0; col<seg_range_image.cols; ++col)
-  {
-    for (int row=0; row<seg_range_image.rows; ++row)
-    {
-      if(labeled_range_image.at<ushort>(row, col) == 0)
-      labeled_gnd_cntr++;//number of true gnd points present in the range image
-      if(seg_range_image.at<ushort>(row, col) == 0 && og_range_image.at<ushort>(row, col) != 0)
-      seg_gnd_cntr++;//number of gnd points detected in the range image
-      if(seg_range_image.at<ushort>(row, col) == labeled_range_image.at<ushort>(row, col))
-      true_detected_gnd_cntr++;//number of true gnd points detected in the range image 
-    }
-  }
-
-  percentage_of_correct_gnd =  (true_detected_gnd_cntr * 100 / labeled_gnd_cntr); //percentage of correct ground points detected
-  percentage_of_incorrect_gnd = ((seg_gnd_cntr-true_detected_gnd_cntr) * 100 / seg_gnd_cntr); //percentage of incorrect ground points detected
-
-  ROS_INFO("number of true gnd points present in the range image -> %d\n"
-            "number of gnd points detected in the range image -> %d\n"
-            "number of true gnd points detected in the range image -> %d\n"
-            "percentage of correct ground points detected -> %d\n"
-            "percentage of incorrect ground points detected -> %d\n", 
-            labeled_gnd_cntr, seg_gnd_cntr, true_detected_gnd_cntr, percentage_of_correct_gnd, percentage_of_incorrect_gnd);
-
-  }
-
-  Mat Cloud2RangeNode::CreateColoredAngleImage(Mat angle_image)
+  Mat Alfa_GS::CreateColoredAngleImage(Mat angle_image)
 {
   Mat colored_angle_image(angle_image.size(), CV_8UC3, cv::Scalar(0, 0, 255));
 
@@ -624,7 +597,176 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
   return colored_angle_image;
 }
 
-  pcl::PointCloud<PointT>::Ptr Cloud2RangeNode::CameraCb(cv::Mat range_image, const sensor_msgs::CameraInfo cinfo_) {
+  void Alfa_GS::CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image)
+  { 
+    int points_cntr=0, seg_gnd_cntr=0, true_detected_gnd_cntr=0, labeled_gnd_cntr=0, labeled_obst_cntr=0, percentage_of_correct_gnd=0, percentage_of_incorrect_gnd=0, true_detected_obst_cntr=0, percentage_of_correct_obst=0;
+    float true_positive=0, false_positive=0, true_negative=0, false_negative=0, true_positive_aux=0, false_positive_aux=0, true_negative_aux=0, false_negative_aux=0; //float because of the float math
+
+    float IoU_g = 0, Recall_g = 0, Recall_mo = 0, IoU_g_aux = 0, Recall_g_aux = 0, Recall_mo_aux = 0;
+    static int cnt = 0;
+    static std::vector<float> IoU_g_vector, Recall_g_vector, Recall_mo_vector, true_positive_vector, false_positive_vector, true_negative_vector, false_negative_vector;
+
+    for (int col=0; col<seg_range_image.cols; ++col)
+  {
+    for (int row=0; row<seg_range_image.rows; ++row)
+    {
+      points_cntr++;//number of points of the range image
+      if(labeled_range_image.at<ushort>(row, col) == 0)
+      labeled_gnd_cntr++;//number of true gnd points present in the range image
+
+      else 
+        if(og_range_image.at<ushort>(row, col)!=0)
+        labeled_obst_cntr++;//number of true obstacle points present in the range image
+
+      if(seg_range_image.at<ushort>(row, col) == 0 && og_range_image.at<ushort>(row, col) != 0)
+      seg_gnd_cntr++;//number of gnd points detected in the range image true_positive
+
+      if(seg_range_image.at<ushort>(row, col) == labeled_range_image.at<ushort>(row, col) && og_range_image.at<ushort>(row, col) != 0)// acho que o og_range_image n está a fzr nada pq o seg_range_image já elimina os pontos a 0 (não existem)
+      true_positive++;//number of true gnd points detected in the range image 
+
+      //ROS_INFO("seg_range_image %d || labeled_range_image %d", seg_range_image.at<ushort>(row, col), labeled_range_image.at<ushort>(row, col));
+
+      if(seg_range_image.at<ushort>(row, col) == 0 && labeled_range_image.at<ushort>(row, col) !=0 && og_range_image.at<ushort>(row, col) != 0)
+      false_positive++;//number of false gnd points detected in the range image 
+
+      if(seg_range_image.at<ushort>(row, col) !=0 && labeled_range_image.at<ushort>(row, col) != 0)
+      true_negative++;
+
+      if(seg_range_image.at<ushort>(row, col) !=0 && labeled_range_image.at<ushort>(row, col) == 0)
+      false_negative++;
+
+      if(seg_range_image.at<ushort>(row, col) != 0 && labeled_range_image.at<ushort>(row, col) != 0)
+      true_detected_obst_cntr++;//number of true obstacle points detected in the range image
+    }
+  }
+
+  percentage_of_correct_gnd =  (true_detected_gnd_cntr * 100 / labeled_gnd_cntr); //percentage of correct ground points detected
+  //true_positive = (true_detected_gnd_cntr * 100 / seg_gnd_cntr); //true positive (percentage of correct ground points from the ones detected)
+  percentage_of_incorrect_gnd = ((seg_gnd_cntr-true_detected_gnd_cntr) * 100 / seg_gnd_cntr); //percentage of incorrect ground points detected
+  //false_positive = 100 - true_positive; //false positive ((percentage of incorrect ground points from the ones detected))
+  percentage_of_correct_obst = (true_detected_obst_cntr * 100 / labeled_obst_cntr); //percentage of correct obstacle points detected
+  //false_negative = 100 - true_negative; 
+
+  //true_negative = true_detected_obst_cntr * 100 / (points_cntr - seg_gnd_cntr);
+  
+
+  //percentage_of_incorrect_obst = (points_cntr-seg_gnd_cntr-true_detected_obst_cntr * 100 / )
+
+
+  IoU_g = ((true_positive)/ (true_positive + false_positive + false_negative)) * 100;//(true_positive + false_positive + false_negative);
+  Recall_g = (true_positive/(true_positive + false_negative)) * 100;
+  Recall_mo = (true_negative/ (true_negative + false_positive)) * 100;
+
+  ROS_INFO("IoU -> %f, Recall_g -> %f, Recall_mo -> %f", IoU_g, Recall_g, Recall_mo);
+
+  IoU_g_vector.push_back(IoU_g);
+  Recall_g_vector.push_back(Recall_g);
+  Recall_mo_vector.push_back(Recall_mo);
+  // true_positive_vector.push_back(true_positive*100/labeled_gnd_cntr);
+  // false_positive_vector.push_back(false_positive*100/labeled_gnd_cntr);
+  // true_negative_vector.push_back(true_negative*100/labeled_obst_cntr);
+  // false_negative_vector.push_back(false_negative*100/labeled_obst_cntr);
+  true_positive_vector.push_back(true_positive*100/(true_positive+false_negative));
+  false_positive_vector.push_back(false_positive*100/(false_positive+true_negative));
+  true_negative_vector.push_back(true_negative*100/(true_negative+false_positive));
+  false_negative_vector.push_back(false_negative*100/(true_positive+false_negative));
+
+
+  for (int c = 0; c <= cnt; c++)
+  {
+    IoU_g_aux += IoU_g_vector[c];
+    Recall_g_aux += Recall_g_vector[c];
+    Recall_mo_aux += Recall_mo_vector[c];
+    true_positive_aux += true_positive_vector[c];
+    false_positive_aux += false_positive_vector[c];
+    true_negative_aux += true_negative_vector[c];
+    false_negative_aux += false_negative_vector[c];
+  }
+
+  cnt ++;
+
+
+  true_positive_aux = true_positive_aux/cnt;
+  false_positive_aux = false_positive_aux/cnt;
+  true_negative_aux = true_negative_aux/cnt;
+  false_negative_aux = false_negative_aux/cnt;
+  IoU_g_aux = IoU_g_aux/cnt;
+  Recall_g_aux = Recall_g_aux/cnt;
+  Recall_mo_aux = Recall_mo_aux/cnt;
+
+
+  ROS_INFO("number of true gnd points present in the range image -> %d\n" 
+            "number of gnd points detected in the range image -> %d\n"
+            "number of true gnd points detected in the range image -> %d\n"
+            "percentage of correct ground points detected -> %d\n"
+            "percentage of incorrect ground points detected (FP) -> %d\n"
+            "True Positive -> %f\n"
+            "False Positive -> %f\n"
+            "True Negative -> %f\n"
+            "False Negative -> %f\n"
+            "IoU_g -> %f\n"
+            "Recall_g -> %f\n"
+            "Recall_mo -> %f\n"
+            "cnt -> %d\n",
+            labeled_gnd_cntr, seg_gnd_cntr, true_detected_gnd_cntr, percentage_of_correct_gnd, percentage_of_incorrect_gnd, true_positive_aux, false_positive_aux, true_negative_aux, false_negative_aux, IoU_g_aux, Recall_g_aux, Recall_mo_aux, cnt);
+
+  } 
+
+  Mat Alfa_GS::CreateLabeledRangeImage(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud)
+  {
+   Mat gnd_label_range_image = Mat(n_beams_, n_cols_, CV_16UC1, 1) ;//initialize matrix to 1 
+
+   int row = 0;
+   int r = 0, a = 0;
+   int total_gnd = 0;
+   int gnd_flag = 0;
+   double half_d_altitude = d_altitude_ /2;
+   double half_d_azimuth = d_azimuth_ / 2; 
+
+  for (size_t i = 0; i < input_cloud->size(); ++i) { //colocar em função
+
+    // calculate altitude and azimuth and put into range image
+    const auto point = (*input_cloud)[i];
+    const auto range = PointRange(point);
+
+    if(point.r==75 && point.g==0 && point.b==75 || point.r==255 && point.g==0 && point.b==255 || point.r==255 && point.g==150 && point.b==255)// for metrics purposes
+    {
+      total_gnd++;
+      gnd_flag = 1;
+    }
+
+    if (range < min_range_ || range > max_range_) {
+      // skip invalid range
+      r++;     
+      continue;
+    }
+     const auto azimuth = PointAzimuth(point);
+     const auto altitude = PointAltitude(point);
+     
+    if (altitude < min_angle_ || altitude > max_angle_) {
+      // skip invalid range
+      a++;
+      continue;
+    }
+
+    int row = n_beams_-1 - ((altitude - half_d_altitude - min_angle_) / d_altitude_);
+    int col = static_cast<int>((azimuth + half_d_azimuth) / d_azimuth_); //% n_cols_;
+
+    // make sure valid
+    //////////////////ROS_INFO("AZIMUTH->%f, D_AZIMUTH->%f, N_COLS->%d, COL->%d, ALTITUDE->%f, ROW->%d", azimuth, d_azimuth_, n_cols_, col, altitude, row);
+    ROS_ASSERT(row >= 0 && row < n_beams_);
+    ROS_ASSERT(row >= 0 && row < n_beams_);
+
+    if (gnd_flag == 1)
+    {
+      gnd_label_range_image.at<ushort>(row, col) = 0;
+    }
+    gnd_flag = 0;
+  }
+  return gnd_label_range_image;
+}
+
+  pcl::PointCloud<PointT>::Ptr Alfa_GS::CameraCb(cv::Mat range_image, const sensor_msgs::CameraInfo cinfo_) {
   // Convert to image
   // cv_bridge::CvImageConstPtr cv_ptr;
   // try {
@@ -703,7 +845,7 @@ Mat Cloud2RangeNode::CreateResImage(Mat range_image, Mat smoothed_image)
   return ptr_cloud;
 }
 
-void Cloud2RangeNode::write_hardware_configurations()
+void Alfa_GS::write_hardware_configurations()
 {
     vector<uint32_t> configs;
     configs.push_back(0);
@@ -741,7 +883,7 @@ void Cloud2RangeNode::write_hardware_configurations()
     write_hardware_registers(configs, hw32_vptr, 3);
 }
 
-alfa_msg::AlfaConfigure::Response Cloud2RangeNode::process_config(alfa_msg::AlfaConfigure::Request &req)
+alfa_msg::AlfaConfigure::Response Alfa_GS::process_config(alfa_msg::AlfaConfigure::Request &req)
 {
     alfa_msg::AlfaConfigure::Response response;
     response.return_status = 1;

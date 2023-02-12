@@ -98,7 +98,7 @@ public:
      * @param input_cloud The point cloud that will be saved
      * @param pointer The pointer to the first position of the memory region where the point cloud will be saved
      */
-    virtual void store_pointcloud_hardware(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud, u64 *pointer);
+    virtual void store_pointcloud_hardware(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud, u64 *pointer);
 
     // /**
     //  * @brief read_hardware_pointcloud Reads and returns a point cloud. This point cloud is converted from 64bits points to the pcl format

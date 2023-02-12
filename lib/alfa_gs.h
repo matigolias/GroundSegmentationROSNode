@@ -30,10 +30,10 @@ const int SAME_OUTPUT_TYPE = -1;
 
 typedef long long int u64;
 
-class Cloud2RangeNode :  public  AlfaNode //mudar para Alfa_GS
+class Alfa_GS :  public  AlfaNode //mudar para Alfa_GS
 {
 public:
-    Cloud2RangeNode(string node_name, string node_type, vector<alfa_msg::ConfigMessage>* default_configurations);
+    Alfa_GS(string node_name, string node_type, vector<alfa_msg::ConfigMessage>* default_configurations);
 
     Mat RepairGaps(const Mat no_ground_image, int step, float depth_threshold);
     Mat CreateAngleImg(Mat range_image);
@@ -43,12 +43,12 @@ public:
     Mat GetSavitskyGolayKernel(int window_size);
     Mat SavitskyGolaySmoothing(const Mat& image, int window_size);
     Mat EraseGroundBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size);
-    void CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image);
     Mat CreateColoredAngleImage(Mat angle_image);
-
-    void write_hardware_configurations();
+    void CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image);
+    Mat CreateLabeledRangeImage(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud);
 
     pcl::PointCloud<PointT>::Ptr CameraCb(cv::Mat range_image, const sensor_msgs::CameraInfo cinfo_);
+    void write_hardware_configurations();
 
     alfa_msg::AlfaMetrics outputMetrics;
 
@@ -72,7 +72,7 @@ private:
   u64 *ddr_pointer_2;
   u_int32_t *hw32_vptr;
 
-  void process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr  input_cloud);
+  void process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr  input_cloud);
   alfa_msg::AlfaConfigure::Response   process_config(alfa_msg::AlfaConfigure::Request &req);
 
 };
