@@ -96,7 +96,7 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
 {
   if(hw)
   {
-    double hw_ground_angle_threshold = 1;//100/100;//passar de rad para degree
+    double hw_ground_angle_threshold = 0.6;//100/100;//passar de rad para degree
     double hw_start_angle_threshold = 3;//300/100;
 
     //store point cloud
@@ -123,9 +123,13 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
       else
         usleep(1);
     }
-
+    
     Mat hw_range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1);
     hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
+
+    auto stop_RI_hw = std::chrono::high_resolution_clock::now();
+
+    auto start_AI_plus_MA_hw = std::chrono::high_resolution_clock::now();
 
     while(!hw_ai_finish){
       vector<uint32_t> hardware_result = read_hardware_registers(hw32_vptr, 4);
@@ -142,9 +146,12 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     Mat hw_smoothed_angle_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1);
     hw_smoothed_angle_image = read_hardware_filtered_angle_image(ddr_pointer_2, n_beams_, n_cols_);//  230400
 
-    auto stop_RI_hw = std::chrono::high_resolution_clock::now();
+    auto stop_AI_plus_MA_hw = std::chrono::high_resolution_clock::now();
+
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
-    ROS_INFO("TOTAL DURATION -> %ld ms", duration_hw_RI.count());
+    auto duration_hw_AI_plus_MA = duration_cast<milliseconds>(start_AI_plus_MA_hw - stop_AI_plus_MA_hw);
+
+    ROS_INFO("RI TIME -> %ld ms   |    AI + MA TIME -> %ld ms", duration_hw_RI.count(), duration_hw_AI_plus_MA.count());
 
     // update header
     //publish_range_img(hw_range_image, cinfo_); 
