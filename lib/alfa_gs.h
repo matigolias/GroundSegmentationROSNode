@@ -22,7 +22,7 @@
 #include <math.h>
 
 using namespace std;
-using PointT = pcl::PointXYZI;
+using PointT = pcl::PointXYZRGB;
 using cv::Mat;
 
 const cv::Point ANCHOR_CENTER = cv::Point(-1, -1);

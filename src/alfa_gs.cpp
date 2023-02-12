@@ -5,7 +5,7 @@
 #include "lib/utils.h"
 
 using namespace cloud2range;
-using PointT = pcl::PointXYZI;
+using PointT = pcl::PointXYZRGB;
 using namespace std::chrono;
 using cv::DataType;
 

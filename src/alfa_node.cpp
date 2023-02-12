@@ -15,7 +15,7 @@ AlfaNode::AlfaNode(string node_name,string node_type,vector<alfa_msg::ConfigMess
     this->node_type = node_type;
     this->default_configurations = default_configurations;
     pcl2_Header_seq = 0;
-    pcloud.reset(new pcl::PointCloud<pcl::PointXYZI>); // Create a new point cloud object
+    pcloud.reset(new pcl::PointCloud<pcl::PointXYZRGB>); // Create a new point cloud object
     init(); //inicialize the ROS enviroment
     it_ = new  image_transport::ImageTransport(nh);
     subscribe_topics();  //Subscrive to all the needed topics
@@ -24,7 +24,7 @@ AlfaNode::AlfaNode(string node_name,string node_type,vector<alfa_msg::ConfigMess
 
 }
 
-void AlfaNode::publish_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud)
+void AlfaNode::publish_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud)
 {
     // cloud.header.frame_id = node_name+"_pointcloud";  // Create the pointcloud2 header to publish
     // cloud.header.seq = pcl2_Header_seq;
@@ -76,7 +76,7 @@ void AlfaNode::publish_metrics(alfa_msg::AlfaMetrics &metrics)
     node_metrics.publish(metrics);  // publish the metrics
 }
 
-void AlfaNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud)
+void AlfaNode::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud)
 {
     cout << "Please implement the process_pointcloud function"<<endl; //If this line execute, it means that the real function was not implemented. Please implement in the derived node
 }
@@ -330,7 +330,7 @@ void AlfaNode::cloud_hcb()
     publish_hardware_pointcloud(pcloud);
 }
 
-void AlfaNode::publish_hardware_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud)
+void AlfaNode::publish_hardware_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud)
 {
     sensor_msgs::PointCloud2 pcl2_frame;
     pcl::toROSMsg(*input_cloud,pcl2_frame);   //conver the pcl object to the pointcloud2 one

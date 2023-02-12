@@ -53,7 +53,7 @@ public:
      * 
      * @param input_cloud Point cloud that will be published in a ROS Topic
      */
-    void publish_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr cloud);
+    void publish_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud);
 
     /**
      * @brief Function that publishes a range image in a ROS Topic
@@ -81,7 +81,7 @@ public:
      * 
      * @param input_cloud The point cloud that is recieved from the ROS Topic
      */
-    virtual void process_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud);
+    virtual void process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud);
 
     /**
      * @brief Function that is called with a call to the configuration service is made
@@ -182,7 +182,7 @@ private:
      * @brief publish_pointcloud publish the pointcloud that was gathered from the hardware layers
      * @param input_cloud
      */
-    void publish_hardware_pointcloud(pcl::PointCloud<pcl::PointXYZI>::Ptr input_cloud);
+    void publish_hardware_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud);
 
     /**
      * @brief hardware_cloud_publisher publisher of the hardware point cloud
@@ -217,7 +217,7 @@ private:
      * @brief Intern point cloud that is used in conversions
      * 
      */
-    pcl::PointCloud<pcl::PointXYZI>::Ptr pcloud;
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr pcloud;
 
     /**
      * @brief Initializes the ROS environment of this node
