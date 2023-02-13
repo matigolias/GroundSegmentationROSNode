@@ -76,12 +76,12 @@ Alfa_GS::Alfa_GS(string node_name,string node_type,vector<alfa_msg::ConfigMessag
   //Map the physical address into user space getting a virtual address for it
   hw = 0;
 
-  if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
-    ddr_pointer = (u64 *)mmap(NULL, ddr_size_1, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ptr_base);
-    ddr_pointer_2 = (u64 *)mmap(NULL, ddr_size_2, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ai_ptr_base);
-    hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
-    hw=1;
-  }
+  // if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
+  //   ddr_pointer = (u64 *)mmap(NULL, ddr_size_1, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ptr_base);
+  //   ddr_pointer_2 = (u64 *)mmap(NULL, ddr_size_2, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ai_ptr_base);
+  //   hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
+  //   hw=1;
+  // }
   else
   ROS_INFO("NAO ENTROU NO NMAP :(");
   
@@ -177,6 +177,9 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
   // pcl_conversions::toPCL(*cloud_msg, pcl_pc2);
   // fromPCLPointCloud2(pcl_pc2, *cloud_XYZIR);
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    static float duration_RI_aux = 0;
+    static float duration_AI_plus_MA_aux = 0;
+    static float duration_GS_aux = 0;
 
     Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
     Mat gnd_label_range_image = Mat(n_beams_, n_cols_, CV_16UC1, 500) ;//initialize matrix to an impossible distance value (500m) 
@@ -279,10 +282,14 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
 
     auto duration_RI = duration_cast<milliseconds>(stop_RI - start_RI);
     auto duration_AI_plus_MA = duration_cast<milliseconds>(stop_AI_plus_MA - start_AI_plus_MA);
-    auto duration_gs = duration_cast<milliseconds>(stop_gs - start_gs);
+    auto duration_GS = duration_cast<milliseconds>(stop_gs - start_gs);
+
+    duration_RI_aux = duration_RI_aux + duration_RI.count();
+    duration_AI_plus_MA_aux = duration_AI_plus_MA_aux + duration_AI_plus_MA.count();
+    duration_GS_aux = duration_GS_aux + duration_GS.count();
 
 
-    ROS_INFO("DURATION RI-> %ld ms  |  AI_plus_MA-> %ld ms  |  GS-> %ld ms", duration_RI.count(), duration_AI_plus_MA.count(), duration_gs.count());
+    ROS_INFO("DURATION RI-> %ld ms  |  AI_plus_MA-> %ld ms  |  GS-> %ld ms", duration_RI_aux, duration_AI_plus_MA_aux, duration_GS_aux);
     
 
     pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
