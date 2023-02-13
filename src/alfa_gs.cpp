@@ -96,7 +96,7 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
 {
   if(hw)
   {
-    double hw_ground_angle_threshold = 0.6;//100/100;//passar de rad para degree
+    double hw_ground_angle_threshold = 0.8;//100/100;//passar de rad para degree
     double hw_start_angle_threshold = 3;//300/100;
 
     //store point cloud
