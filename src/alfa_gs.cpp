@@ -119,7 +119,10 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
       //value = hardware_result[2];
       //if(value==1)
       if(hardware_result[2]==1)
+      {
         hw_ri_finish = 1;
+        auto start_AI_plus_MA_hw = std::chrono::high_resolution_clock::now();
+      }
       else
         usleep(1);
     }
@@ -128,8 +131,6 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
 
     auto stop_RI_hw = std::chrono::high_resolution_clock::now();
-
-    auto start_AI_plus_MA_hw = std::chrono::high_resolution_clock::now();
 
     while(!hw_ai_finish){
       vector<uint32_t> hardware_result = read_hardware_registers(hw32_vptr, 4);
