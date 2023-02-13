@@ -119,13 +119,11 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
       //value = hardware_result[2];
       //if(value==1)
       if(hardware_result[2]==1)
-      {
         hw_ri_finish = 1;
-        auto start_AI_plus_MA_hw = std::chrono::high_resolution_clock::now();
-      }
       else
         usleep(1);
     }
+    auto start_AI_plus_MA_hw = std::chrono::high_resolution_clock::now();
     
     Mat hw_range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1);
     hw_range_image = read_hardware_pointcloud(ddr_pointer, n_beams_, n_cols_);//mudar para read hw_RI
