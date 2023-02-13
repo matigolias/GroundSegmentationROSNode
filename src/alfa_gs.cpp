@@ -76,14 +76,14 @@ Alfa_GS::Alfa_GS(string node_name,string node_type,vector<alfa_msg::ConfigMessag
   //Map the physical address into user space getting a virtual address for it
   hw = 0;
 
-  // if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
-  //   ddr_pointer = (u64 *)mmap(NULL, ddr_size_1, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ptr_base);
-  //   ddr_pointer_2 = (u64 *)mmap(NULL, ddr_size_2, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ai_ptr_base);
-  //   hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
-  //   hw=1;
-  // }
-  // else
-  // ROS_INFO("NAO ENTROU NO NMAP :(");
+  if ((fd = open("/dev/mem", O_RDWR | O_SYNC)) != -1) {
+    ddr_pointer = (u64 *)mmap(NULL, ddr_size_1, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ptr_base);
+    ddr_pointer_2 = (u64 *)mmap(NULL, ddr_size_2, PROT_READ|PROT_WRITE, MAP_SHARED, fd, ddr_ai_ptr_base);
+    hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
+    hw=1;
+  }
+  else
+  ROS_INFO("NAO ENTROU NO NMAP :(");
   
   if(hw)
     {
