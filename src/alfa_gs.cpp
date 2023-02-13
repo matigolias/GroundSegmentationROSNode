@@ -82,8 +82,8 @@ Alfa_GS::Alfa_GS(string node_name,string node_type,vector<alfa_msg::ConfigMessag
   //   hw32_vptr = (u_int32_t *)mmap(NULL, region_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, axi_pbase);
   //   hw=1;
   // }
-  else
-  ROS_INFO("NAO ENTROU NO NMAP :(");
+  // else
+  // ROS_INFO("NAO ENTROU NO NMAP :(");
   
   if(hw)
     {
@@ -289,7 +289,7 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     duration_GS_aux = duration_GS_aux + duration_GS.count();
 
 
-    ROS_INFO("DURATION RI-> %ld ms  |  AI_plus_MA-> %ld ms  |  GS-> %ld ms", duration_RI_aux, duration_AI_plus_MA_aux, duration_GS_aux);
+    ROS_INFO("DURATION RI-> %f ms  |  AI_plus_MA-> %f ms  |  GS-> %f ms", duration_RI_aux, duration_AI_plus_MA_aux, duration_GS_aux);
     
 
     pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
