@@ -13,9 +13,9 @@ Alfa_GS::Alfa_GS(string node_name,string node_type,vector<alfa_msg::ConfigMessag
 {
       // Read params
 
-  window_size =  5; // 5, 7, 9, 11
+  window_size =  11; // 5, 7, 9, 11
   ROS_ASSERT(window_size == 5 || 7 || 9 || 11);
-  ground_angle_threshold = 0.087266;//0.087266); //5º
+  ground_angle_threshold = 0.115;//0.087266); //5º
   ROS_ASSERT(ground_angle_threshold > 0);
   start_angle_threshold = 0.523598; //30º
   ROS_ASSERT(ground_angle_threshold > 0);
@@ -28,11 +28,11 @@ Alfa_GS::Alfa_GS(string node_name,string node_type,vector<alfa_msg::ConfigMessag
   ROS_ASSERT(sample_freq_ > 0);
 
   min_angle_ = -0.453785;//-0.7853981634);//
-  max_angle_ = 0.104719;//0.7853981634);//
+  max_angle_ = 0.09599;//0.7853981634);//
   ROS_ASSERT(min_angle_ < max_angle_);
 
   min_range_ = 0.5;
-  max_range_ = 120;
+  max_range_ = 100;
   ROS_ASSERT(min_range_ < max_range_ && min_range_ >= 0.0);
 
   // const auto model = pnh_.param<std::string>("model", "OS1-64");
@@ -96,7 +96,7 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
 {
   if(hw)
   {
-    double hw_ground_angle_threshold = 0.8;//100/100;//passar de rad para degree
+    double hw_ground_angle_threshold = 0.6589;//100/100;//passar de rad para degree 6.589
     double hw_start_angle_threshold = 3;//300/100;
 
     //store point cloud
@@ -180,65 +180,74 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
+    Mat gnd_label_range_image = Mat(n_beams_, n_cols_, CV_16UC1, 500) ;//initialize matrix to an impossible distance value (500m) 
 
-    //  int row = 0;
-    //  float prev_azimuth = 0;
-    int r=0, a=0;
+    int row = 0;
+    float prev_azimuth = 0;
+    int r = 0, a = 0;
+    int total_gnd = 0;
+    int gnd_flag = 0;
+    double half_d_altitude = d_altitude_ /2;
+    double half_d_azimuth = d_azimuth_ / 2; 
+
+    auto start_RI = high_resolution_clock::now();
 
     for (size_t i = 0; i < input_cloud->size(); ++i) { //colocar em função
 
-      //int ring=100;
+    // calculate altitude and azimuth and put into range image
+    const auto point = (*input_cloud)[i];;
+    const auto range = PointRange(point);
 
-      // calculate altitude and azimuth and put into range image
-      const auto point = (*input_cloud)[i];
-      const auto range = PointRange(point);
+    if(point.r==75 && point.g==0 && point.b==75 || point.r==255 && point.g==0 && point.b==255 || point.r==255 && point.g==150 && point.b==255)// for metrics purposes
+    {
+      total_gnd++;
+      gnd_flag = 1;
+    }
 
-      //ring = cloud_XYZIR->points[i].ring;
-      //ROS_INFO("RING -> %d", ring);
-
-      if (range < min_range_ || range > max_range_) {
-        // skip invalid range
-        r++;     
-        continue;
-      }
+    if (range < min_range_ || range > max_range_) {
+      // skip invalid range
+      r++;     
+      continue;
+    }
       const auto azimuth = PointAzimuth(point);
       const auto altitude = PointAltitude(point);
       
-      if (altitude < min_angle_ || altitude > max_angle_) {
-        // skip invalid range
-        a++;
-        continue;
-      }
-
-      //const int row = ring;
-      // int round towards zero
-      //int row = (altitude - min_angle_) / d_altitude_ + 0.5; //VLP-16 (+0.5)
-      
-      //  if(azimuth < prev_azimuth && azimuth < 1 && prev_azimuth > 6)
-      //    row++;
-
-      //int row = FindRow(row1, altitude);
-
-      int row = ((max_angle_ - altitude) / (max_angle_ - min_angle_)) * n_beams_; //atualizar com o do cloud2range
-
-      const int col = static_cast<int>(azimuth / d_azimuth_); //% n_cols_;
-
-      // make sure valid
-      //ROS_INFO("AZIMUTH->%f, D_AZIMUTH->%f, N_COLS->%d, COL->%d, ALTITUDE->%f, ROW->%d", azimuth, d_azimuth_, n_cols_, col, altitude, row);
-      ROS_ASSERT(row >= 0 && row < n_beams_);
-      ROS_ASSERT(col >= 0 && col < n_cols_);
-
-      // normalize range to [0, 1]
-      const double range_norm = (range - min_range_) / (max_range_ - min_range_);
-
-      //ROS_INFO("ALTITUDE->%f, MIN_ANGLE->%f, D_ALTITUDE->%f, ROW1->%d, ROW->%d, COL->%d, RANGE_NORM->%f", altitude, min_angle_, d_altitude_, row1, row, col, range_norm* (std::numeric_limits<ushort>::max() - 1) + 1);
-
-      range_image.at<ushort>(row, col) = range_norm * (std::numeric_limits<ushort>::max() - 1) + 1; //(n_beams_-row-1)
-
-      // ROS_INFO("RANGE_NORM -> %f, ROW -> %d, COLUM -> %d", range_norm, row, col);
-      // ROS_INFO("RANGE2 -> %d", range_image.at<ushort>(row, col));
-      //prev_azimuth = azimuth;
+    if (altitude < min_angle_ || altitude > max_angle_) {
+      // skip invalid range
+      a++;
+      continue;
     }
+
+    int row = n_beams_-1 - ((altitude - half_d_altitude - min_angle_) / d_altitude_);
+
+    int col = static_cast<int>((azimuth + half_d_azimuth) / d_azimuth_); //% n_cols_;
+
+    // make sure valid
+    //////////////////ROS_INFO("AZIMUTH->%f, D_AZIMUTH->%f, N_COLS->%d, COL->%d, ALTITUDE->%f, ROW->%d", azimuth, d_azimuth_, n_cols_, col, altitude, row);
+    ROS_ASSERT(row >= 0 && row < n_beams_);
+    ROS_ASSERT(row >= 0 && row < n_beams_);
+
+    // if(col==0 && row < 32)
+    // ROS_INFO("Point-> %f", range);
+
+    // normalize range to [0, 1]
+    const double range_norm = (range - min_range_) / (max_range_ - min_range_);
+
+    //ROS_INFO("ALTITUDE->%f, MIN_ANGLE->%f, D_ALTITUDE->%f, ROW1->%d, ROW->%d, COL->%d, RANGE_NORM->%f", altitude, min_angle_, d_altitude_, row1, row, col, range_norm* (std::numeric_limits<ushort>::max() - 1) + 1);
+    range_image.at<ushort>(row, col) = range_norm * (std::numeric_limits<ushort>::max() - 1) + 1; //(n_beams_-row-1)
+
+    if (gnd_flag == 1)
+    {
+      gnd_label_range_image.at<ushort>(row, col) = 0;
+    }
+
+    //ROS_INFO("RANGE_NORM -> %f, ROW -> %d, COLUM -> %d", range_norm, row, col);
+    // ROS_INFO("RANGE2 -> %d", range_image.at<ushort>(row, col));
+    prev_azimuth = azimuth;
+    gnd_flag = 0;
+  }
+
+  auto stop_RI = high_resolution_clock::now();
 
 
     // ROS_INFO("altitude max -> %f", teste);
@@ -251,21 +260,31 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     ROS_INFO("INV_ALTITUDE -> %d", a);
     ROS_INFO("INV_RANGE -> %d", r);
 
-    
+    auto start_AI_plus_MA = high_resolution_clock::now();
 
-    Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
-    Mat angle_image = CreateAngleImg(repaired_range_image);
-    Mat smoothed_image = SavitskyGolaySmoothing(angle_image, window_size);
+    //Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
+    Mat angle_image = CreateAngleImg(range_image);
+    Mat smoothed_image = MovingAverageSmoothing(angle_image, 3);
+    //Mat smoothed_image = SavitskyGolaySmoothing(angle_image, window_size);
     //Mat res_image = CreateResImage (range_image, smoothed_image);
+
+    auto stop_AI_plus_MA = high_resolution_clock::now();
 
     auto start_gs = high_resolution_clock::now();
 
-    Mat no_ground_image = EraseGroundBFS (range_image, smoothed_image, ground_angle_threshold, start_angle_threshold, window_size);
+    Mat no_ground_image = EraseGroundBFS (range_image, angle_image, ground_angle_threshold, start_angle_threshold, window_size);
 
     auto stop_gs = high_resolution_clock::now();
+
+    CheckNumberOfDetectedRIdGnd(range_image, no_ground_image, gnd_label_range_image);
+
+    auto duration_RI = duration_cast<milliseconds>(stop_RI - start_RI);
+    auto duration_AI_plus_MA = duration_cast<milliseconds>(stop_AI_plus_MA - start_AI_plus_MA);
     auto duration_gs = duration_cast<milliseconds>(stop_gs - start_gs);
 
-    ROS_INFO("TOTAL DURATION -> %ld ms", duration_gs.count());
+
+    ROS_INFO("DURATION RI-> %ld ms  |  AI_plus_MA-> %ld ms  |  GS-> %ld ms", duration_RI.count(), duration_AI_plus_MA.count(), duration_gs.count());
+    
 
     pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
 
@@ -362,6 +381,202 @@ Mat Alfa_GS::CreateAngleImg(Mat range_image)
 
   return angle_image;
 }
+
+Mat Alfa_GS::CreateAngleImg2(const Mat& range_image)
+{
+  Mat angle_image = Mat::zeros(range_image.size(), CV_16UC1);
+  Mat x_mat = Mat::zeros(range_image.size(), CV_16UC1);
+  Mat y_mat = Mat::zeros(range_image.size(), CV_16UC1);
+  //const auto& sines_vec = _params.RowAngleSines();
+  //const auto& cosines_vec = _params.RowAngleCosines();
+
+  float dx=0, dy=0, angle=0, vertical_amplitude = max_angle_ - min_angle_,
+  _cos=0, _sin=0, aux=0;
+
+  angle = 0 * d_altitude_ - vertical_amplitude/2;
+  _sin = sin(angle);
+  _cos = cos(angle);
+
+  x_mat.row(0) = range_image.row(0) * _cos;
+  y_mat.row(0) = range_image.row(0) * _sin;
+
+  for (int r = 1; r < angle_image.rows; ++r) {
+    angle = r * d_altitude_ - vertical_amplitude/2;
+    _sin = sin(angle);
+    _cos = cos(angle);
+    // x_mat.row(r) = range_image.row(r) +1;//* _cos;
+    // y_mat.row(r) = range_image.row(r) +1;//* _sin;
+    range_image.row(r).copyTo(y_mat.row(r));
+    y_mat.row(r) = y_mat.row(r) * _sin;
+    range_image.row(r).copyTo(x_mat.row(r));
+    x_mat.row(r) = x_mat.row(r) * _cos;
+    for (int c = 0; c < angle_image.cols; ++c) {
+      dx = fabs(x_mat.at<ushort>(r, c) - x_mat.at<ushort>(r - 1, c));
+      dy = fabs(y_mat.at<ushort>(r, c) - y_mat.at<ushort>(r - 1, c));
+
+      // //////// aproximação para grau inteiro e de volta para radiano /////
+      // //float aux = (int)(atan2(dy, dx)/0.01745);
+      // //angle_image.at<float>(r, c) = (aux*0.01745);
+      // ////////////////////////////////////////////////////////////////////
+
+      aux = atan2(dy, dx);
+
+      ////////////////////////Angulos Positivos e Negativos///////
+      // dx = x_mat.at<float>(r, c) - x_mat.at<float>(r - 1, c);
+      // dy = y_mat.at<float>(r, c) - y_mat.at<float>(r - 1, c);
+
+      // aux = atan(dy/dx);
+      ///////////////////////////////////////////////////////////
+      
+      ///////Teste para validar Atan_LUT do HW//////////////////////////
+
+      angle_image.at<ushort>(r, c) = aux * 100;
+
+      ////////////////////////////////////////////////////////////////////
+
+      //ROS_INFO("d_altitude -> %f, vertical_amplitude -> %f, Angle -> %f, _sin %f, y_mat.at<float>(r, c) -> %f", d_altitude_, vertical_amplitude, angle, _sin, y_mat.at<float>(r, c));
+    }
+  }
+  //ROS_INFO("TOP DXy -> %f | TOP X -> %f | TOP Y -> %f", top_dxy, top_x_mat, top_y_mat);
+  return angle_image;
+}
+
+Mat Alfa_GS::MovingAverageSmoothing(Mat angle_image, int window_size) //Meter ROS_ACERT no window_size (tem de ser impar -> 3, 5, 7, 9)
+  {
+    float current_angle = 0, average_angle = 0, points_diference = 0;
+    Mat smoothed_angle_image = Mat::zeros(angle_image.size(), DataType<float>::type);
+
+    angle_image.copyTo(smoothed_angle_image);
+
+    //ROS_INFO(">>>>>>>>>>>>>>>>> ang col %d , ang row %d, smoth col %d, smoth row %d", angle_image.cols, angle_image.rows, smoothed_angle_image.cols, smoothed_angle_image.rows);
+
+    //for (int col=0; col<n_cols_; col++)
+    for (int col=0; col<3600; col++)
+      {
+        for (int row=n_beams_-1; row>=0; row--) 
+        //for (int row=0; row<n_beams_; ++row)
+        {
+          // float cnt = 0;
+          // smoothed_angle_image.at<float>(row, col) = cnt;
+          // //cnt = cnt + 0.1;
+
+          switch (window_size)
+          {
+          // case 3:
+          // if (row <= n_beams_-2 && row >= 2)//row >= 2 e nao 1 pq a primeira row da angle image está preenchida com 0 pq na prática esta tem menos uma row do que a range image
+          // {
+          //   average_angle = (angle_image.at<ushort>(row-1, col) + angle_image.at<ushort>(row, col) + angle_image.at<ushort>(row+1, col))/3;
+          //   float res = fabs(average_angle - angle_image.at<float>(row, col));
+          //   //ROS_INFO("res %f - angle_image %f - average_angle %f", res, angle_image.at<float>(row, col), average_angle);
+          //   if(res > 1.047)
+          //   smoothed_angle_image.at<ushort>(row, col) = average_angle;
+          //   else
+          //   smoothed_angle_image.at<ushort>(row, col) = angle_image.at<ushort>(row, col);
+          // }
+
+          //   break;
+
+           case 3:
+          //if (row <= n_beams_-2 && row >= 2 && ((angle_image.at<float>(row-1, col)>=0 && angle_image.at<float>(row, col)>=0 && angle_image.at<float>(row+1, col)>=0) || (angle_image.at<float>(row-1, col)<=0 && angle_image.at<float>(row, col)<=0 && angle_image.at<float>(row+1, col)<=0)))//teste ângulos negativos
+          if (row <= n_beams_-2 && row >= 2 && angle_image.at<float>(row-1, col)!=0 && angle_image.at<float>(row, col)!=0 && angle_image.at<float>(row+1, col)!=0)//row >= 2 e nao 1 pq a primeira row da angle image está preenchida com 0 pq na prática esta tem menos uma row do que a range image
+          {
+            // average_angle = (angle_image.at<ushort>(row-1, col) + angle_image.at<ushort>(row+1, col))/2;
+            // float res = fabs(average_angle - angle_image.at<float>(row, col));
+            // ROS_INFO("res %f - angle_image %f - average_angle %f", res, angle_image.at<float>(row, col), average_angle);
+
+            // points_diference = fabs(angle_image.at<float>(row+1, col) - angle_image.at<float>(row-1, col));
+            // average_angle = (angle_image.at<float>(row-1, col) + angle_image.at<float>(row+1, col))/2;
+            // float res = fabs(average_angle - angle_image.at<float>(row, col));
+            // //ROS_INFO("res_2 %f - angle_image_2 %f - average_angle_2 %f", res, angle_image.at<float>(row, col), average_angle);
+            // if((int)res > 0.0)// && points_diference < 0.174)
+            // smoothed_angle_image.at<float>(row, col) = average_angle;
+            
+
+            points_diference = fabs(angle_image.at<float>(row+1, col) - angle_image.at<float>(row-1, col));
+            average_angle = (angle_image.at<float>(row-1, col) + angle_image.at<float>(row+1, col))/2;
+            float res = fabs(average_angle - angle_image.at<float>(row, col));
+            //ROS_INFO("res_2 %f - angle_image_2 %f - average_angle_2 %f", res, angle_image.at<float>(row, col), average_angle);
+            //if((int)res > 0.0)// && points_diference < 0.174)
+            smoothed_angle_image.at<float>(row, col) = average_angle;
+
+            //ROS_INFO("average_angle %f", average_angle*0.01745);
+            
+            //else
+            //smoothed_angle_image.at<ushort>(row, col) = angle_image.at<float>(row, col);
+
+
+          }
+
+            break;
+
+          case 5:
+          if (row <= n_beams_-3 && row >= 3) //row >= 3 e nao 2 pq a primeira row da angle image está preenchida com 0 pq na prática esta tem menos uma row do que a range image
+          {
+            average_angle = (angle_image.at<ushort>(row-2, col) + angle_image.at<ushort>(row-1, col) + angle_image.at<ushort>(row, col) + angle_image.at<ushort>(row+1, col) + angle_image.at<ushort>(row+2, col))/5;
+            // ROS_INFO("angle %d", angle_image.at<ushort>(row, col));
+            // ROS_INFO("average_angle %d", smoothed_angle_image.at<ushort>(row, col));
+                  //smoothed_angle_image.at<ushort>(row, col) = average_angle;
+            // ROS_INFO("angle %d", angle_image.at<ushort>(row, col));
+            // ROS_INFO("average_angle %d", smoothed_angle_image.at<ushort>(row, col));
+
+            float res = fabs(average_angle - angle_image.at<float>(row, col));
+            //ROS_INFO("res %f - angle_image %f - average_angle %f", res, angle_image.at<float>(row, col), average_angle);
+            if(res > 0.2)
+            smoothed_angle_image.at<ushort>(row, col) = average_angle;
+            else
+            smoothed_angle_image.at<ushort>(row, col) = angle_image.at<float>(row, col);
+          }
+            break;
+
+          case 7:
+          if (row <= n_beams_-4 && row >= 4) //row >= 4 e nao 3 pq a primeira row da angle image está preenchida com 0 pq na prática esta tem menos uma row do que a range image
+          {
+            // average_angle = (angle_image.at<float>(row-3, col) + angle_image.at<float>(row-2, col) + angle_image.at<float>(row-1, col) + angle_image.at<float>(row, col) + angle_image.at<float>(row+1, col) + angle_image.at<float>(row+2, col) + angle_image.at<float>(row+3, col))/7;
+            // smoothed_angle_image.at<float>(row, col) = average_angle;
+            // if(row<15 && col==5)
+            // ROS_INFO("smoothed_angle_image -> %f , angle_image.at<float>(row, col) -> %f", smoothed_angle_image.at<float>(row, col), angle_image.at<float>(row, col));
+            //mistério de só funcionar com ushort...
+            
+            average_angle = (angle_image.at<float>(row-3, col) + angle_image.at<float>(row-2, col) + angle_image.at<float>(row-1, col) + angle_image.at<float>(row, col) + angle_image.at<float>(row+1, col) + angle_image.at<float>(row+2, col) + angle_image.at<float>(row+3, col))/7;
+            //smoothed_angle_image.at<ushort>(row, col) = average_angle;
+            float res = fabs(average_angle - angle_image.at<float>(row, col));
+            //ROS_INFO("res %f - angle_image %f - average_angle %f", res, angle_image.at<float>(row, col), average_angle);
+            if(res < 0.085)
+            smoothed_angle_image.at<ushort>(row, col) = average_angle;
+            else
+            smoothed_angle_image.at<ushort>(row, col) = angle_image.at<ushort>(row, col);
+            //if(row<15 && col==5)
+            //ROS_INFO("smoothed_angle_image -> %f , angle_image.at<float>(row, col) -> %f", smoothed_angle_image.at<float>(row, col), angle_image.at<float>(row, col));
+            
+            // average_angle = (angle_image.at<ushort>(row-3, col) + angle_image.at<ushort>(row-2, col) + angle_image.at<ushort>(row-1, col) + angle_image.at<ushort>(row, col) + angle_image.at<ushort>(row+1, col) + angle_image.at<ushort>(row+2, col) + angle_image.at<ushort>(row+3, col))/7;
+            // smoothed_angle_image.at<ushort>(row, col) = average_angle;
+
+          }
+            break;
+          
+          case 9:
+          if (row <= n_beams_-5 && row >= 5) //row >= 5 e nao 4 pq a primeira row da angle image está preenchida com 0 pq na prática esta tem menos uma row do que a range image
+          {
+            average_angle = (angle_image.at<float>(row-4, col) + angle_image.at<float>(row-3, col) + angle_image.at<float>(row-2, col) + angle_image.at<float>(row-1, col) + angle_image.at<float>(row, col) + angle_image.at<float>(row+1, col) + angle_image.at<float>(row+2, col) + angle_image.at<float>(row+3, col) + angle_image.at<float>(row+4, col))/9;
+                //smoothed_angle_image.at<ushort>(row, col) = average_angle;
+                        float res = fabs(average_angle - angle_image.at<float>(row, col));
+            //ROS_INFO("res %f - angle_image %f - average_angle %f", res, angle_image.at<float>(row, col), average_angle);
+            if(res < 0.085)
+            smoothed_angle_image.at<ushort>(row, col) = average_angle;
+            else
+            smoothed_angle_image.at<ushort>(row, col) = angle_image.at<ushort>(row, col);
+          }
+            break;
+          
+          default:
+          //return -1;
+            break;
+          }
+        }
+      }
+
+      return smoothed_angle_image;
+  }
 
 Mat Alfa_GS::CreateResImage(Mat range_image, Mat smoothed_image)
 {
@@ -504,7 +719,7 @@ Mat Alfa_GS::CreateResImage(Mat range_image, Mat smoothed_image)
       int r = n_beams_ - 1;
       while (r > 0 && range_image.at<ushort>(r, c) < 1) {
       --r;
-      }//ver se dá para tirar chavetas
+      }
       
       uint16_t current_label = Labeler.CheckLabelAt(r, c);    
       if (current_label > 0){

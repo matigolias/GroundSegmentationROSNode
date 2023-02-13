@@ -37,6 +37,8 @@ public:
 
     Mat RepairGaps(const Mat no_ground_image, int step, float depth_threshold);
     Mat CreateAngleImg(Mat range_image);
+    Mat CreateAngleImg2(const Mat &range_image);
+    Mat MovingAverageSmoothing(Mat angle_image, int window_size);
     Mat CreateResImage(Mat range_image, Mat smoothed_image);
     // int FindRow(int unprecise_row, float vert_angle);
     Mat GetUniformKernel(int window_size, int type);
