@@ -150,13 +150,17 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     auto duration_hw_RI = duration_cast<milliseconds>(stop_RI_hw - start_RI_hw);
     auto duration_hw_AI_plus_MA = duration_cast<milliseconds>(start_AI_plus_MA_hw - stop_AI_plus_MA_hw);
 
-    ROS_INFO("RI TIME -> %ld ms   |    AI + MA TIME -> %ld ms", duration_hw_RI.count(), duration_hw_AI_plus_MA.count());
-
     // update header
     //publish_range_img(hw_range_image, cinfo_); 
     //publish_pointcloud(seg_point_cloud);
-
+    
+    auto start_gs_hw = std::chrono::high_resolution_clock::now();
     Mat hw_no_ground_image = EraseBFS (hw_range_image, hw_smoothed_angle_image, hw_ground_angle_threshold , hw_start_angle_threshold, window_size);
+    auto stop_gs_hw = std::chrono::high_resolution_clock::now();
+
+    auto duration_hw_GS = duration_cast<milliseconds>(stop_gs_hw - start_gs_hw);
+    ROS_INFO("RI TIME -> %ld ms   |    AI + MA TIME -> %ld ms   |   BFS TIME -> %ld ms ", duration_hw_RI.count(), duration_hw_AI_plus_MA.count(), duration_hw_GS.count());
+
     pcl::PointCloud<PointT>::Ptr hw_seg_point_cloud = CameraCb(hw_no_ground_image, cinfo_);
     pcl::PointCloud<PointT>::Ptr hw_og_point_cloud = CameraCb(hw_range_image, cinfo_);
 
