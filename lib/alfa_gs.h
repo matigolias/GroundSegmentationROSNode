@@ -35,6 +35,7 @@ class Alfa_GS :  public  AlfaNode //mudar para Alfa_GS
 public:
     Alfa_GS(string node_name, string node_type, vector<alfa_msg::ConfigMessage>* default_configurations);
 
+    Mat CreateRangeImage(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud);
     Mat RepairGaps(const Mat no_ground_image, int step, float depth_threshold);
     Mat CreateAngleImg(Mat range_image);
     Mat CreateAngleImg2(const Mat &range_image);
@@ -44,7 +45,7 @@ public:
     Mat GetUniformKernel(int window_size, int type);
     Mat GetSavitskyGolayKernel(int window_size);
     Mat SavitskyGolaySmoothing(const Mat& image, int window_size);
-    Mat EraseGroundBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size);
+    Mat EraseBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size);
     Mat CreateColoredAngleImage(Mat angle_image);
     void CheckNumberOfDetectedRIdGnd (Mat og_range_image, Mat seg_range_image, Mat labeled_range_image);
     Mat CreateLabeledRangeImage(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud);
@@ -63,6 +64,7 @@ private:
   double d_azimuth_, d_altitude_;
   double start_angle_threshold, ground_angle_threshold;
   int n_cols_, window_size;
+  int erase_ground;
 
   int sensor_tag;
   bool hw;
@@ -75,6 +77,7 @@ private:
   u_int32_t *hw32_vptr;
 
   void process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr  input_cloud);
-  alfa_msg::AlfaConfigure::Response   process_config(alfa_msg::AlfaConfigure::Request &req);
+  void UpdateSegmentationSettings(const alfa_msg::AlfaConfigure::Request configs);
+  alfa_msg::AlfaConfigure::Response process_config(alfa_msg::AlfaConfigure::Request &req);
 
 };

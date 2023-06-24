@@ -35,17 +35,17 @@ Alfa_GS::Alfa_GS(string node_name,string node_type,vector<alfa_msg::ConfigMessag
   max_range_ = 100;
   ROS_ASSERT(min_range_ < max_range_ && min_range_ >= 0.0);
 
+  erase_ground = 1;
+  ROS_ASSERT(erase_ground == 0 || erase_ground == 1);
   // const auto model = pnh_.param<std::string>("model", "OS1-64");
   // ROS_INFO("lidar model: %s", model.c_str());
 
-  // ROS_INFO(
-  //     "n_beams: %d, rpm: %d, angle(deg): [%0.2f, %0.2f], range: [%0.2f, %0.2f]",
-  //     n_beams_, rpm_, Deg_Rad(min_angle_), Deg_Rad(max_angle_), min_range_,
-  //     max_range_);
+  ROS_INFO(
+      "n_beams: %d, rpm: %d, angle(deg): [%0.2f, %0.2f], range: [%0.2f, %0.2f]",
+      n_beams_, rpm_, Deg_Rad(min_angle_), Deg_Rad(max_angle_), min_range_,
+      max_range_);
 
   n_cols_ = sample_freq_ * 60 / rpm_;
-  ROS_INFO("range image shape (%d, %d)", n_beams_, n_cols_);
-
   d_azimuth_ = Rad_Deg(360.0 / n_cols_);
   d_altitude_ = (max_angle_ - min_angle_) / (n_beams_ - 1);
   ROS_INFO("angular resolution(deg) horizontal: %0.2f, vertical: %0.2f",
@@ -156,7 +156,7 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     //publish_range_img(hw_range_image, cinfo_); 
     //publish_pointcloud(seg_point_cloud);
 
-    Mat hw_no_ground_image = EraseGroundBFS (hw_range_image, hw_smoothed_angle_image, hw_ground_angle_threshold , hw_start_angle_threshold, window_size);
+    Mat hw_no_ground_image = EraseBFS (hw_range_image, hw_smoothed_angle_image, hw_ground_angle_threshold , hw_start_angle_threshold, window_size);
     pcl::PointCloud<PointT>::Ptr hw_seg_point_cloud = CameraCb(hw_no_ground_image, cinfo_);
     pcl::PointCloud<PointT>::Ptr hw_og_point_cloud = CameraCb(hw_range_image, cinfo_);
 
@@ -181,11 +181,7 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     static float duration_AI_plus_MA_aux = 0;
     static float duration_GS_aux = 0;
 
-    Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
-    Mat gnd_label_range_image = Mat(n_beams_, n_cols_, CV_16UC1, 500) ;//initialize matrix to an impossible distance value (500m) 
-
     int row = 0;
-    float prev_azimuth = 0;
     int r = 0, a = 0;
     int total_gnd = 0;
     int gnd_flag = 0;
@@ -193,6 +189,64 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     double half_d_azimuth = d_azimuth_ / 2; 
 
     auto start_RI = high_resolution_clock::now();
+    Mat range_image = CreateRangeImage(input_cloud);
+
+    auto stop_RI = high_resolution_clock::now();
+
+
+    // ROS_INFO("altitude max -> %f", teste);
+    // ROS_DEBUG("num points %zu, num pixels %d", input_cloud->size(),
+    //           cv::countNonZero(range_image));
+    // ROS_INFO("num points %zu, num pixels %d", input_cloud->size(),
+    //           cv::countNonZero(range_image));
+
+    auto start_AI_plus_MA = high_resolution_clock::now();
+
+    //Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
+        
+    Mat angle_image = CreateAngleImg(range_image);
+    Mat smoothed_image = MovingAverageSmoothing(angle_image, 3);
+    //Mat smoothed_image = SavitskyGolaySmoothing(angle_image, window_size);
+    //Mat res_image = CreateResImage (range_image, smoothed_image);
+
+    auto stop_AI_plus_MA = high_resolution_clock::now();
+
+    auto start_gs = high_resolution_clock::now();
+
+    Mat no_ground_image = EraseBFS (range_image, angle_image, ground_angle_threshold, start_angle_threshold, window_size);
+
+    auto stop_gs = high_resolution_clock::now();
+
+    //CheckNumberOfDetectedRIdGnd(range_image, no_ground_image, CreateLabeledRangeImage(input_cloud));
+
+
+    auto duration_RI = duration_cast<milliseconds>(stop_RI - start_RI);
+    auto duration_AI_plus_MA = duration_cast<milliseconds>(stop_AI_plus_MA - start_AI_plus_MA);
+    auto duration_GS = duration_cast<milliseconds>(stop_gs - start_gs);
+
+    duration_RI_aux = duration_RI_aux + duration_RI.count();
+    duration_AI_plus_MA_aux = duration_AI_plus_MA_aux + duration_AI_plus_MA.count();
+    duration_GS_aux = duration_GS_aux + duration_GS.count();
+
+
+    ROS_INFO("DURATION RI-> %f ms  |  AI_plus_MA-> %f ms  |  GS-> %f ms", duration_RI_aux, duration_AI_plus_MA_aux, duration_GS_aux);
+    
+
+    pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
+
+    // update header
+    publish_range_img(no_ground_image, cinfo_); 
+    publish_pointcloud(seg_point_cloud);
+  }
+}
+
+Mat Alfa_GS::CreateRangeImage(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud) {
+
+   double half_d_altitude = d_altitude_ /2;
+   double half_d_azimuth = d_azimuth_ / 2;
+   int a=0, r=0;
+
+   Mat range_image = Mat::zeros(n_beams_, n_cols_, CV_16UC1); //CV_16UC1
 
     for (size_t i = 0; i < input_cloud->size(); ++i) { //colocar em função
 
@@ -200,15 +254,9 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
     const auto point = (*input_cloud)[i];;
     const auto range = PointRange(point);
 
-    if(point.r==75 && point.g==0 && point.b==75 || point.r==255 && point.g==0 && point.b==255 || point.r==255 && point.g==150 && point.b==255)// for metrics purposes
-    {
-      total_gnd++;
-      gnd_flag = 1;
-    }
-
     if (range < min_range_ || range > max_range_) {
-      // skip invalid range
-      r++;     
+      // skip invalid range 
+      r++;    
       continue;
     }
       const auto azimuth = PointAzimuth(point);
@@ -237,67 +285,12 @@ void Alfa_GS::process_pointcloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cl
 
     //ROS_INFO("ALTITUDE->%f, MIN_ANGLE->%f, D_ALTITUDE->%f, ROW1->%d, ROW->%d, COL->%d, RANGE_NORM->%f", altitude, min_angle_, d_altitude_, row1, row, col, range_norm* (std::numeric_limits<ushort>::max() - 1) + 1);
     range_image.at<ushort>(row, col) = range_norm * (std::numeric_limits<ushort>::max() - 1) + 1; //(n_beams_-row-1)
-
-    if (gnd_flag == 1)
-    {
-      gnd_label_range_image.at<ushort>(row, col) = 0;
-    }
-
-    //ROS_INFO("RANGE_NORM -> %f, ROW -> %d, COLUM -> %d", range_norm, row, col);
-    // ROS_INFO("RANGE2 -> %d", range_image.at<ushort>(row, col));
-    prev_azimuth = azimuth;
-    gnd_flag = 0;
   }
 
-  auto stop_RI = high_resolution_clock::now();
+    // ROS_INFO("INV_ALTITUDE -> %d", a);
+    // ROS_INFO("INV_RANGE -> %d", r);
 
-
-    // ROS_INFO("altitude max -> %f", teste);
-    ROS_DEBUG("num points %zu, num pixels %d", input_cloud->size(),
-              cv::countNonZero(range_image));
-    ROS_INFO("num points %zu, num pixels %d", input_cloud->size(),
-              cv::countNonZero(range_image));
-
-
-    ROS_INFO("INV_ALTITUDE -> %d", a);
-    ROS_INFO("INV_RANGE -> %d", r);
-
-    auto start_AI_plus_MA = high_resolution_clock::now();
-
-    //Mat repaired_range_image = RepairGaps(range_image, 5, 1.0f); //coolocar estas variáveis no destrutor para não haver memory leakage
-    Mat angle_image = CreateAngleImg(range_image);
-    Mat smoothed_image = MovingAverageSmoothing(angle_image, 3);
-    //Mat smoothed_image = SavitskyGolaySmoothing(angle_image, window_size);
-    //Mat res_image = CreateResImage (range_image, smoothed_image);
-
-    auto stop_AI_plus_MA = high_resolution_clock::now();
-
-    auto start_gs = high_resolution_clock::now();
-
-    Mat no_ground_image = EraseGroundBFS (range_image, angle_image, ground_angle_threshold, start_angle_threshold, window_size);
-
-    auto stop_gs = high_resolution_clock::now();
-
-    CheckNumberOfDetectedRIdGnd(range_image, no_ground_image, gnd_label_range_image);
-
-    auto duration_RI = duration_cast<milliseconds>(stop_RI - start_RI);
-    auto duration_AI_plus_MA = duration_cast<milliseconds>(stop_AI_plus_MA - start_AI_plus_MA);
-    auto duration_GS = duration_cast<milliseconds>(stop_gs - start_gs);
-
-    duration_RI_aux = duration_RI_aux + duration_RI.count();
-    duration_AI_plus_MA_aux = duration_AI_plus_MA_aux + duration_AI_plus_MA.count();
-    duration_GS_aux = duration_GS_aux + duration_GS.count();
-
-
-    ROS_INFO("DURATION RI-> %f ms  |  AI_plus_MA-> %f ms  |  GS-> %f ms", duration_RI_aux, duration_AI_plus_MA_aux, duration_GS_aux);
-    
-
-    pcl::PointCloud<PointT>::Ptr seg_point_cloud = CameraCb(no_ground_image, cinfo_);
-
-    // update header
-    publish_range_img(no_ground_image, cinfo_); 
-    publish_pointcloud(seg_point_cloud);
-  }
+  return range_image;
 }
 
 Mat Alfa_GS::RepairGaps(const Mat no_ground_image, int step, float depth_threshold) {
@@ -715,7 +708,7 @@ Mat Alfa_GS::CreateResImage(Mat range_image, Mat smoothed_image)
     return smoothed_image;
   }
 
-  Mat Alfa_GS::EraseGroundBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size)
+  Mat Alfa_GS::EraseBFS (Mat range_image, Mat smoothed_image, double ground_angle_threshold, double start_angle_threshold, int kernel_size)
   {
     Label Labeler(smoothed_image.rows, smoothed_image.cols);
     //Mat lable_image = Labeler.GetLabelImage();
@@ -753,8 +746,16 @@ Mat Alfa_GS::CreateResImage(Mat range_image, Mat smoothed_image)
     cv::dilate(*label_image_ptr, dilated, kernel);
     for (int r = 0; r < dilated.rows; ++r) {
       for (int c = 0; c < dilated.cols; ++c) {
-        if (dilated.at<uint16_t>(r, c) == 0) // all unlabeled points are non-ground
-        res_image.at<ushort>(r, c) = range_image.at<ushort>(r, c);
+        if(erase_ground)
+        {
+          if (dilated.at<uint16_t>(r, c) == 0) // all unlabeled points are non-ground
+          res_image.at<ushort>(r, c) = range_image.at<ushort>(r, c);
+        }
+        else
+        {
+          if (dilated.at<uint16_t>(r, c) != 0) // all labeled points are ground
+          res_image.at<ushort>(r, c) = range_image.at<ushort>(r, c);
+        }
     }
   }
     return res_image;
@@ -827,11 +828,9 @@ Mat Alfa_GS::CreateResImage(Mat range_image, Mat smoothed_image)
   { 
     int points_cntr=0, seg_gnd_cntr=0, true_detected_gnd_cntr=0, labeled_gnd_cntr=0, labeled_obst_cntr=0, percentage_of_correct_gnd=0, percentage_of_incorrect_gnd=0, true_detected_obst_cntr=0, percentage_of_correct_obst=0;
     float true_positive=0, false_positive=0, true_negative=0, false_negative=0, true_positive_aux=0, false_positive_aux=0, true_negative_aux=0, false_negative_aux=0; //float because of the float math
-
     float IoU_g = 0, Recall_g = 0, Recall_mo = 0, IoU_g_aux = 0, Recall_g_aux = 0, Recall_mo_aux = 0;
     static int cnt = 0;
     static std::vector<float> IoU_g_vector, Recall_g_vector, Recall_mo_vector, true_positive_vector, false_positive_vector, true_negative_vector, false_negative_vector;
-
     for (int col=0; col<seg_range_image.cols; ++col)
   {
     for (int row=0; row<seg_range_image.rows; ++row)
@@ -865,7 +864,6 @@ Mat Alfa_GS::CreateResImage(Mat range_image, Mat smoothed_image)
       true_detected_obst_cntr++;//number of true obstacle points detected in the range image
     }
   }
-
   percentage_of_correct_gnd =  (true_detected_gnd_cntr * 100 / labeled_gnd_cntr); //percentage of correct ground points detected
   //true_positive = (true_detected_gnd_cntr * 100 / seg_gnd_cntr); //true positive (percentage of correct ground points from the ones detected)
   percentage_of_incorrect_gnd = ((seg_gnd_cntr-true_detected_gnd_cntr) * 100 / seg_gnd_cntr); //percentage of incorrect ground points detected
@@ -1111,12 +1109,27 @@ void Alfa_GS::write_hardware_configurations()
 
 alfa_msg::AlfaConfigure::Response Alfa_GS::process_config(alfa_msg::AlfaConfigure::Request &req)
 {
+    UpdateSegmentationSettings(req);
     alfa_msg::AlfaConfigure::Response response;
     response.return_status = 1;
     return response;
 }
 
+void Alfa_GS::UpdateSegmentationSettings(const alfa_msg::AlfaConfigure::Request configs)
+{
+    erase_ground = configs.configurations[0].config;
+    n_beams_ = configs.configurations[1].config;
+    rpm_ = configs.configurations[2].config;
+    sample_freq_ = configs.configurations[3].config;
+    min_angle_ = configs.configurations[4].config;
+    max_angle_ = configs.configurations[5].config;
+    min_range_ = configs.configurations[6].config;
+    max_range_ = configs.configurations[7].config;
+    start_angle_threshold = configs.configurations[10].config;
+    ground_angle_threshold = configs.configurations[11].config;
+    window_size = configs.configurations[13].config;
 
+}
 
 
 
